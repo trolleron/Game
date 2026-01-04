@@ -10,7 +10,7 @@ let game = {
     autoPower: 1,
     lastTime: 0,
     saveInterval: 0,
-    digTime: 0  // для анимации
+    isDigging: false
 };
 
 const ores = [
@@ -31,6 +31,20 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// Спрайт гнома
+const sprite = new Image();
+sprite.src = 'https://opengameart.org/sites/default/files/miner_0.png'; // 256x96 px, 8 idle + 8 mining
+
+const spriteWidth = 32;
+const spriteHeight = 48;
+const scale = 3; // размер на экране ~96x144 px
+
+let frame = 0;
+let animationSpeed = 8; // кадров в секунду для idle
+let miningFrame = 0;
+let mining = false;
+
+// Форматирование
 function formatNumber(num) {
     if (num < 1000) return Math.floor(num).toLocaleString();
     const units = ['', 'k', 'M', 'B', 'T'];
@@ -96,14 +110,16 @@ function showMessage(text) {
     setTimeout(() => msg.style.opacity = '0', 1000);
 }
 
-function drawMine() {
+function drawMine(now) {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Стены
     ctx.fillStyle = '#222';
     ctx.fillRect(0, 0, 60, canvas.height);
     ctx.fillRect(canvas.width - 60, 0, 60, canvas.height);
 
+    // Земля
     const blockHeight = 30;
     const blocks = Math.ceil(canvas.height / blockHeight);
     for (let i = 0; i < blocks; i++) {
@@ -112,67 +128,22 @@ function drawMine() {
         ctx.fillRect(60, i * blockHeight, canvas.width - 120, blockHeight);
     }
 
-    // Гном в стиле Craft the World
-    const gX = canvas.width / 2;
-    const gY = canvas.height - 140;
-    const swing = Math.sin(Date.now() / 400) * 3;
-    const digAnim = game.digTime ? Math.max(0, 400 - (Date.now() - game.digTime)) / 8 : 0;
+    // Рисуем гнома
+    if (sprite.complete) {
+        const dwarfX = canvas.width / 2 - (spriteWidth * scale / 2);
+        const dwarfY = canvas.height - 180;
 
-    // Шлем с рогами
-    ctx.fillStyle = '#A0522D';
-    ctx.fillRect(gX - 32 + swing, gY - 85, 64, 35);
-    ctx.fillStyle = '#F5F5DC';
-    ctx.fillRect(gX - 40 + swing, gY - 90, 12, 20);
-    ctx.fillRect(gX + 28 + swing, gY - 90, 12, 20);
+        let row = mining ? 1 : 0; // 0 - idle, 1 - mining
+        let currentFrame = mining ? miningFrame : frame;
 
-    // Лампа
-    ctx.fillStyle = '#FFAA00';
-    ctx.beginPath();
-    ctx.arc(gX + swing, gY - 70, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = Math.sin(Date.now() / 300) > 0 ? '#FFFFAA' : '#FFCC00';
-    ctx.beginPath();
-    ctx.arc(gX + swing, gY - 70, 7, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Борода (большая!)
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(gX - 28 + swing, gY - 45, 56, 35);
-
-    // Голова
-    ctx.fillStyle = '#FFDBAC';
-    ctx.beginPath();
-    ctx.arc(gX + swing, gY - 50, 22, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Куртка
-    ctx.fillStyle = '#228B22';
-    ctx.fillRect(gX - 28 + swing, gY - 20, 56, 55);
-
-    // Пояс
-    ctx.fillStyle = '#654321';
-    ctx.fillRect(gX - 32 + swing, gY + 15, 64, 15);
-
-    // Руки
-    ctx.fillStyle = '#FFDBAC';
-    ctx.fillRect(gX - 40 + swing, gY - 10, 18, 40);
-    ctx.fillRect(gX + 22 + swing, gY - 10 + digAnim, 22, 40);
-
-    // Кирка
-    ctx.fillStyle = '#696969';
-    ctx.fillRect(gX + 40 + swing, gY + 20 + digAnim, 50, 12);
-    ctx.fillStyle = '#C0C0C0';
-    ctx.fillRect(gX + 45 + swing, gY + 10 + digAnim, 45, 22);
-
-    // Ноги короткие
-    ctx.fillStyle = '#228B22';
-    ctx.fillRect(gX - 18 + swing, gY + 35, 15, 35);
-    ctx.fillRect(gX + 3 + swing, gY + 35, 15, 35);
-
-    // Ботинки
-    ctx.fillStyle = '#000';
-    ctx.fillRect(gX - 22 + swing, gY + 65, 22, 18);
-    ctx.fillRect(gX - 1 + swing, gY + 65, 22, 18);
+        ctx.drawImage(
+            sprite,
+            currentFrame * spriteWidth, row * spriteHeight,
+            spriteWidth, spriteHeight,
+            dwarfX, dwarfY,
+            spriteWidth * scale, spriteHeight * scale
+        );
+    }
 
     // Глубина
     ctx.fillStyle = '#FFF';
@@ -185,8 +156,9 @@ function dig() {
     const ore = getOre();
     const amount = game.pickaxePower * (1 + Math.floor(game.depth / 10));
     game.coins += ore.value * amount;
-    game.digTime = Date.now();
-    showOre(canvas.width / 2 - 20, canvas.height - 160, ore);
+    mining = true;
+    miningFrame = 0;
+    showOre(canvas.width / 2 - 20, canvas.height - 200, ore);
     showMessage(`+${formatNumber(ore.value * amount)} 💰`);
     updateUI();
 }
@@ -223,7 +195,7 @@ document.querySelectorAll('.upgrade').forEach(up => {
             if (game.coins >= price) { game.coins -= price; game.pickaxePower++; showMessage('🛠️ Кирка улучшена!'); }
         } else if (type === 'auto') {
             price = 200 * Math.pow(2, game.autoMiners);
-            if (game.coins >= price) { game.coins -= price; game.autoMiners++; game.autoPower += 0.5; showMessage('🤖 Авто-гном!'); }
+            if (game.coins >= price) { game.coins -= price; game.autoMiners++; game.autoPower += 0.5; showMessage('🤖 Авто-гном нанят!'); }
         } else if (type === 'depth') {
             price = 1000 * Math.pow(1.3, Math.floor(game.depth / 10));
             if (game.coins >= price) { game.coins -= price; game.depth += 10; showMessage('⬇️ Глубже в шахту!'); }
@@ -240,13 +212,22 @@ function gameLoop(now) {
     autoDig(dt);
     game.depth += dt * 0.1;
 
+    // Анимация idle
+    frame = Math.floor(now / 125) % 8;
+
+    // Анимация mining
+    if (mining) {
+        miningFrame = Math.floor((now - game.lastTime) / 80) % 8;
+        if (miningFrame === 7) mining = false;
+    }
+
     game.saveInterval += dt;
     if (game.saveInterval > 10) {
         saveGame();
         game.saveInterval = 0;
     }
 
-    drawMine();
+    drawMine(now);
     updateUI();
 
     requestAnimationFrame(gameLoop);
