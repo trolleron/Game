@@ -1,11 +1,12 @@
 let tg = window.Telegram.WebApp;
-tg.ready(); tg.expand();
+tg.ready();
+tg.expand();
 
 let game = {
     hp: 100, maxHp: 100,
     atk: 10, def: 5,
     level: 1, exp: 0,
-    gold: 0, potions: 3,
+    gold: 0,
     room: 1, maxRoom: 10,
     weapon: 0, armor: 0,
     prestige: 0,
@@ -60,85 +61,87 @@ function updateGameStats() {
     document.getElementById('level').textContent = game.level;
     document.getElementById('gold').textContent = game.gold;
     document.getElementById('room').textContent = `\( {Math.floor(game.room)}/ \){Math.floor(game.maxRoom)}`;
+
+    // Обновление цен апгрейдов
+    document.querySelectorAll('.upgrade').forEach((up, i) => {
+        let price;
+        if (i === 0) price = 200 * Math.pow(1.5, game.weapon);
+        else if (i === 1) price = 300 * Math.pow(1.5, game.armor);
+        else price = 5000 * Math.pow(2, game.prestige);
+        up.textContent = up.textContent.replace(/\(\d+g\)/, `(${Math.floor(price)}g)`);
+        up.classList.toggle('afford', game.gold >= price);
+    });
 }
 
 function drawScene() {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Подземелье (сетка)
+    // Сетка подземелья
     const gridSize = 50;
+    ctx.strokeStyle = '#333';
     for (let x = 0; x < canvas.width; x += gridSize) {
-        ctx.strokeStyle = '#333';
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
     for (let y = 0; y < canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 
-    // Герой (рыцарь)
-    const heroX = canvas.width / 2 - 30;
-    const heroY = canvas.height - 150;
-    // Шлем
-    ctx.fillStyle = '#C0C0C0';
-    ctx.fillRect(heroX + 15, heroY, 30, 20);
-    // Голова
-    ctx.fillStyle = '#FFDBAC';
-    ctx.beginPath();
-    ctx.arc(heroX + 30, heroY + 25, 15, 0, Math.PI * 2);
-    ctx.fill();
-    // Тело (доспех)
-    ctx.fillStyle = '#4682B4';
-    ctx.fillRect(heroX + 10, heroY + 35, 40, 60);
-    // Щит
-    ctx.fillStyle = '#A9A9A9';
-    ctx.fillRect(heroX, heroY + 40, 20, 50);
-    // Меч
-    ctx.fillStyle = '#C0C0C0';
-    ctx.fillRect(heroX + 50, heroY + 50, 10, 60);
+    // Герой (рыцарь внизу)
+    const heroX = canvas.width / 2 - 40;
+    const heroY = canvas.height - 160;
+    ctx.fillStyle = '#C0C0C0'; // шлем
+    ctx.fillRect(heroX + 20, heroY, 40, 25);
+    ctx.fillStyle = '#FFDBAC'; // голова
+    ctx.beginPath(); ctx.arc(heroX + 40, heroY + 30, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#4682B4'; // доспех
+    ctx.fillRect(heroX + 10, heroY + 45, 60, 80);
+    ctx.fillStyle = '#A9A9A9'; // щит
+    ctx.fillRect(heroX, heroY + 50, 30, 60);
+    ctx.fillStyle = '#C0C0C0'; // меч
+    ctx.fillRect(heroX + 70, heroY + 60, 15, 80);
 
     // Монстр (если бой)
     if (game.battleActive && game.enemy) {
-        const enemyX = canvas.width / 2 - 30;
-        const enemyY = 50;
-        ctx.fillStyle = '#8B0000';
-        ctx.fillRect(enemyX + 10, enemyY + 20, 40, 60); // тело
-        ctx.fillStyle = '#228B22';
-        ctx.beginPath();
-        ctx.arc(enemyX + 30, enemyY + 10, 20, 0, Math.PI * 2);
-        ctx.fill(); // голова
+        const enemyX = canvas.width / 2 - 40;
+        const enemyY = 60;
+        ctx.fillStyle = '#228B22'; // голова орка/гоблина
+        ctx.beginPath(); ctx.arc(enemyX + 40, enemyY + 20, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8B0000'; // тело
+        ctx.fillRect(enemyX + 10, enemyY + 40, 60, 100);
+        ctx.fillStyle = '#FFF'; // глаза
+        ctx.fillRect(enemyX + 25, enemyY + 10, 10, 10);
+        ctx.fillRect(enemyX + 45, enemyY + 10, 10, 10);
+        ctx.fillStyle = '#000'; // зрачки
+        ctx.fillRect(enemyX + 28, enemyY + 13, 4, 4);
+        ctx.fillRect(enemyX + 48, enemyY + 13, 4, 4);
         ctx.fillStyle = '#FFF';
-        ctx.fillRect(enemyX + 20, enemyY + 5, 8, 8);
-        ctx.fillRect(enemyX + 32, enemyY + 5, 8, 8); // глаза
-        ctx.fillStyle = '#000';
-        ctx.fillRect(enemyX + 24, enemyY + 15, 12, 8); // рот
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
         ctx.fillText(game.enemy.name, canvas.width / 2, enemyY - 10);
+
         // HP бар врага
         ctx.fillStyle = '#333';
-        ctx.fillRect(canvas.width / 2 - 60, enemyY + 90, 120, 20);
+        ctx.fillRect(canvas.width / 2 - 80, enemyY + 150, 160, 25);
         ctx.fillStyle = '#ff4444';
-        ctx.fillRect(canvas.width / 2 - 60, enemyY + 90, (game.enemy.hp / game.enemy.maxHp) * 120, 20);
+        ctx.fillRect(canvas.width / 2 - 80, enemyY + 150, (game.enemy.hp / game.enemy.maxHp) * 160, 25);
+        ctx.fillStyle = '#FFF';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText(`\( {game.enemy.hp}/ \){game.enemy.maxHp}`, canvas.width / 2, enemyY + 167);
     }
 
     // Текст комнаты
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(`Комната ${Math.floor(game.room)}`, canvas.width / 2, canvas.height - 20);
+    ctx.fillText(`Комната ${Math.floor(game.room)}`, canvas.width / 2, canvas.height - 30);
 }
 
 function startBattle() {
-    const monsterIndex = Math.floor(Math.random() * monsters.length * (game.room / game.maxRoom));
-    game.enemy = JSON.parse(JSON.stringify(monsters[Math.min(monsterIndex, monsters.length - 1)]));
+    const index = Math.min(Math.floor(game.room / 5), monsters.length - 1);
+    game.enemy = JSON.parse(JSON.stringify(monsters[index]));
     game.battleActive = true;
-    showMessage(`Появился ${game.enemy.name}!`);
-    updateGameStats();
+    showMessage(`Бой с ${game.enemy.name}!`);
 }
 
 function fight() {
@@ -149,7 +152,7 @@ function fight() {
 
     const damage = Math.max(1, (game.atk + game.weapon * 5) - game.enemy.def);
     game.enemy.hp -= damage;
-    showMessage(`Удар! -${damage}`);
+    showMessage(`- ${damage} урона врагу!`);
 
     if (game.enemy.hp <= 0) {
         game.gold += game.enemy.gold;
@@ -172,12 +175,12 @@ function fight() {
 
     const enemyDamage = Math.max(1, game.enemy.atk - (game.def + game.armor * 5));
     game.hp -= enemyDamage;
-    showMessage(`\( {game.enemy.name} атакует! - \){enemyDamage}`);
+    showMessage(`Враг нанёс ${enemyDamage} урона!`);
 
     if (game.hp <= 0) {
         game.hp = game.maxHp / 2;
         game.room = 1;
-        showMessage('Поражение! Возрождение...');
+        showMessage('Поражение! Возрождение в комнате 1');
     }
 
     updateGameStats();
@@ -186,8 +189,8 @@ function fight() {
 function heal() {
     if (game.gold >= 50 && game.hp < game.maxHp) {
         game.gold -= 50;
-        game.hp = Math.min(game.maxHp, game.hp + 50);
-        showMessage('Вылечено +50 HP');
+        game.hp = Math.min(game.maxHp, game.hp + 80);
+        showMessage('Зелье выпито +80 HP');
         updateGameStats();
     }
 }
@@ -195,18 +198,17 @@ function heal() {
 document.getElementById('fightBtn').addEventListener('click', fight);
 document.getElementById('healBtn').addEventListener('click', heal);
 
-document.querySelectorAll('.upgrade').forEach(up => {
+document.querySelectorAll('.upgrade').forEach((up, i) => {
     up.addEventListener('click', () => {
-        const type = up.dataset.type;
-        let price = type === 'weapon' ? 200 * Math.pow(1.5, game.weapon) : 
-                  type === 'armor' ? 300 * Math.pow(1.5, game.armor) : 
-                  5000 * Math.pow(2, game.prestige);
+        let price = i === 0 ? 200 * Math.pow(1.5, game.weapon) :
+                    i === 1 ? 300 * Math.pow(1.5, game.armor) :
+                    5000 * Math.pow(2, game.prestige);
         if (game.gold >= price) {
             game.gold -= price;
-            if (type === 'weapon') game.weapon++;
-            if (type === 'armor') game.armor++;
-            if (type === 'prestige') { game.prestige++; game.atk *= 1.5; game.def *= 1.5; showMessage('Престиж! Stats x1.5'); }
-            showMessage('Куплено!');
+            if (i === 0) { game.weapon++; game.atk += 5; }
+            if (i === 1) { game.armor++; game.def += 5; }
+            if (i === 2) { game.prestige++; game.atk *= 1.5; game.def *= 1.5; showMessage('Престиж! Stats x1.5'); }
+            showMessage('Улучшение куплено!');
             updateGameStats();
         }
     });
@@ -224,6 +226,8 @@ function gameLoop(now) {
     }
 
     drawScene();
+    updateGameStats(); // исправлено: обновляем статы каждый кадр
+
     requestAnimationFrame(gameLoop);
 }
 
