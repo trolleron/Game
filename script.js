@@ -11,9 +11,8 @@ let state = {
 const SPRITES = {
     player: 'https://img.itch.zone/aW1nLzExNDI1OTI5LnBuZw==/original/m966Ph.png', // Рыцарь
     monster: {
-        goblin: 'https://img.itch.zone/aW1nLzExNDI1OTI4LnBuZw==/original/70M9x3.png', // Гоблин
-        skeleton: 'https://img.itch.zone/aW1nLzExNDI1OTMwLnBuZw==/original/hP6Y%2Bx.png', // Скелет
-        boss: 'https://img.itch.zone/aW1nLzExNDI1OTI3LnBuZw==/original/7%2F7vGk.png' // Демон
+        goblin: 'img/goblin.png', // Гоблин
+        demon: 'img/boss.png' // Демон
     }
 };
 
