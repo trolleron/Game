@@ -2,37 +2,103 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подземный Квест RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPG Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Ваш CSS код */
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #111; color: #fff; overflow: hidden; }
+        #game { display: flex; flex-direction: column; height: 100vh; }
+        #canvas { flex: 1; background: #222; border-bottom: 2px solid #444; width: 100%; }
+        #ui { padding: 10px; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; gap: 10px; }
+        .stat { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 16px; margin-bottom: 5px; }
+        #battle, #shop { display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        button { background: #ff4444; border: none; border-radius: 10px; color: white; padding: 15px; font-size: 18px; flex: 1; cursor: pointer; transition: all 0.2s; min-width: 120px; }
+        button:active { transform: scale(0.95); background: #cc3333; }
+        
+        .upgrade { background: rgba(0,255,0,0.1); border: 2px solid #00ff00; border-radius: 10px; padding: 10px; flex: 1; text-align: center; cursor: pointer; transition: all 0.2s; min-width: 90px; font-size: 14px; }
+        .upgrade.afford { background: rgba(0,255,0,0.3); }
+        .upgrade:not(.afford) { opacity: 0.5; filter: grayscale(1); }
+        
+        #message { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; color: #ffd700; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 10; text-shadow: 2px 2px 4px #000; text-align: center; width: 80%; }
+        
+        .hp-container { width: 100%; margin: 5px 0; }
+        .hp-bar { height: 15px; background: #333; border-radius: 10px; overflow: hidden; border: 1px solid #555; }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #44ff44); transition: width 0.3s; width: 100%; }
+    </style>
 </head>
 <body>
-    <div id="game">
-        <canvas id="canvas"></canvas>
-        <div id="ui">
-            <div class="stat">
-                <span>❤️ HP:</span><span id="hp">100/100</span>
-                <span>⚔️ ATK:</span><span id="atk">10</span>
-                <span>🛡️ DEF:</span><span id="def">5</span>
-            </div>
-            <div class="stat">
-                <span>⭐ Level:</span><span id="level">1</span>
-                <span>💰 Gold:</span><span id="gold">0</span>
-                <span>📍 Комната:</span><span id="room">1/10</span>
-            </div>
-            <div id="battle">
-                <button id="fightBtn">⚔️ Новый бой</button>
-                <button id="healBtn">💊 Зелье (50g)</button>
-            </div>
-            <div id="shop">
-                <div class="upgrade" data-type="weapon">Меч +5 ATK (200g)</div>
-                <div class="upgrade" data-type="armor">Броня +5 DEF (300g)</div>
-                <div class="upgrade" data-type="prestige">Престиж x1.5 (5000g)</div>
+
+<div id="game">
+    <div id="message"></div>
+    <canvas id="canvas"></canvas>
+    
+    <div id="ui">
+        <div class="stat">
+            <span>Уровень: <b id="level">1</b></span>
+            <span>Золото: <b id="gold">0</b>g</span>
+            <span>Комната: <b id="room">1/10</b></span>
+        </div>
+        
+        <div class="hp-container">
+            <div class="hp-bar"><div id="hp-visual" class="hp-fill"></div></div>
+            <div class="stat" style="font-size: 12px;">
+                <span>HP: <span id="hp">100/100</span></span>
+                <span>ATK: <span id="atk">10</span> | DEF: <span id="def">5</span></span>
             </div>
         </div>
-        <div id="message"></div>
+
+        <div id="battle">
+            <button id="fightBtn">В БОЙ!</button>
+            <button id="healBtn" style="background: #4444ff;">Зелье (50g)</button>
+        </div>
+
+        <div id="shop">
+            <div class="upgrade" id="up-weapon">Оружие (200g)</div>
+            <div class="upgrade" id="up-armor">Броня (300g)</div>
+            <div class="upgrade" id="up-prestige">Престиж (5000g)</div>
+        </div>
     </div>
-    <script src="script.js"></script>
+</div>
+
+<script>
+    // Вставьте сюда исправленный JavaScript код из моего предыдущего ответа
+    // Только добавьте обновление визуальной полоски HP:
+    
+    /* Дополнение к функции updateGameStats: */
+    function updateGameStats() {
+        // ... (весь старый код функции) ...
+        
+        // Визуальное обновление полоски
+        const hpPercent = (game.hp / game.maxHp) * 100;
+        document.getElementById('hp-visual').style.width = Math.max(0, hpPercent) + "%";
+        
+        // Обновление текстовых полей (исправленные шаблонные строки)
+        document.getElementById('hp').textContent = Math.floor(game.hp) + " / " + game.maxHp;
+        document.getElementById('atk').textContent = game.atk + (game.weapon * 5);
+        document.getElementById('def').textContent = game.def + (game.armor * 5);
+        document.getElementById('level').textContent = game.level;
+        document.getElementById('gold').textContent = game.gold;
+        document.getElementById('room').textContent = Math.floor(game.room) + " / " + Math.floor(game.maxRoom);
+
+        // Цены для кнопок
+        const prices = [
+            200 * Math.pow(1.5, game.weapon),
+            300 * Math.pow(1.5, game.armor),
+            5000 * Math.pow(2, game.prestige)
+        ];
+        
+        const ups = document.querySelectorAll('.upgrade');
+        ups.forEach((up, i) => {
+            const price = Math.floor(prices[i]);
+            const names = ["Оружие", "Броня", "Престиж"];
+            up.textContent = `${names[i]} (${price}g)`;
+            up.classList.toggle('afford', game.gold >= price);
+        });
+    }
+
+    // ... остальной JS код ...
+</script>
 </body>
 </html>
