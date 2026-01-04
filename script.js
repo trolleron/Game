@@ -7,14 +7,14 @@ let state = {
     weaponLvl: 0, armorLvl: 0
 };
 
-let enemy = { name: "Гоблин", hp: 30, maxHp: 30, color: "#4ade80" };
+let enemy = { name: "Гоблин", hp: 30, maxHp: 30, color: "#4ade80", type: "slime" };
 
 function init() {
     tg.ready();
     tg.expand();
     window.addEventListener('resize', resize);
     resize();
-    load(); // Загрузка сохранения
+    load();
     updateUI();
     gameLoop();
 }
@@ -24,10 +24,74 @@ function resize() {
     canvas.height = canvas.offsetHeight;
 }
 
+// РИСОВАНИЕ МОНСТРА С ТЕЛОМ
+function drawEnemy(x, y) {
+    const time = Date.now() / 300;
+    const bounce = Math.sin(time) * 5;
+    
+    ctx.save();
+    ctx.translate(x, y + bounce);
+
+    // Цвет монстра (тело)
+    ctx.fillStyle = enemy.color;
+
+    if (enemy.name === "БОСС") {
+        // Отрисовка крупного рогатого монстра
+        ctx.fillRect(-50, -20, 100, 80); // Тело
+        ctx.fillRect(-60, 20, 20, 40);   // Левая рука
+        ctx.fillRect(40, 20, 20, 40);    // Правая рука
+        // Рога
+        ctx.beginPath();
+        ctx.moveTo(-40, -20); ctx.lineTo(-60, -50); ctx.lineTo(-20, -20); ctx.fill();
+        ctx.moveTo(40, -20); ctx.lineTo(60, -50); ctx.lineTo(20, -20); ctx.fill();
+    } else {
+        // Отрисовка обычного гоблина/существа
+        // Тело-капля
+        ctx.beginPath();
+        ctx.ellipse(0, 20, 45, 55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Уши
+        ctx.beginPath();
+        ctx.moveTo(-35, -10); ctx.lineTo(-55, -30); ctx.lineTo(-20, 5); ctx.fill();
+        ctx.moveTo(35, -10); ctx.lineTo(55, -30); ctx.lineTo(20, 5); ctx.fill();
+    }
+
+    // Глаза (общие для всех)
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(-15, -5, 8, 0, Math.PI * 2);
+    ctx.arc(15, -5, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Зрачки (двигаются за игроком)
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(-15, -5, 4, 0, Math.PI * 2);
+    ctx.arc(15, -5, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Полоска здоровья над головой
+    ctx.fillStyle = "#222";
+    ctx.fillRect(x - 50, y - 90, 100, 8);
+    ctx.fillStyle = "#ff4757";
+    ctx.fillRect(x - 50, y - 90, (enemy.hp / enemy.maxHp) * 100, 8);
+    
+    ctx.fillStyle = "white";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(enemy.name, x, y - 105);
+}
+
 function attack() {
     if (state.hp <= 0) return;
 
-    // 1. Урон игрока
+    // Тряска экрана
+    document.getElementById('gameCanvas').classList.add('shake');
+    setTimeout(() => document.getElementById('gameCanvas').classList.remove('shake'), 300);
+
+    // Урон врагу
     const pDmg = state.atk + (state.weaponLvl * 5);
     enemy.hp -= pDmg;
     showToast(`-${pDmg} HP`);
@@ -35,13 +99,12 @@ function attack() {
     if (enemy.hp <= 0) {
         winBattle();
     } else {
-        // 2. Урон монстра (возрастает с комнатами)
+        // Урон игроку
         const monsterPower = 8 + Math.floor(state.room * 1.5);
         const playerDef = state.def + (state.armorLvl * 5);
         const eDmg = Math.max(2, monsterPower - playerDef);
         
         state.hp -= eDmg;
-
         if (state.hp <= 0) {
             state.hp = 0;
             updateUI();
@@ -53,25 +116,20 @@ function attack() {
 }
 
 function winBattle() {
-    const reward = 20 + state.room * 5;
-    state.gold += reward;
+    state.gold += 20 + state.room * 5;
     state.xp += 40;
     state.room++;
     
     if (state.xp >= state.lvl * 100) {
-        state.lvl++;
-        state.xp = 0;
-        state.maxHp += 20;
-        state.hp = state.maxHp;
+        state.lvl++; state.xp = 0;
+        state.maxHp += 20; state.hp = state.maxHp;
         showToast("LEVEL UP!");
     }
     
-    // Спавн нового врага
     enemy.maxHp = 30 + (state.room * 10);
     enemy.hp = enemy.maxHp;
     enemy.name = state.room % 5 === 0 ? "БОСС" : "Монстр";
-    enemy.color = state.room % 5 === 0 ? "#f97316" : "#4ade80";
-    
+    enemy.color = state.room % 5 === 0 ? "#ef4444" : "#4ade80";
     save();
 }
 
@@ -83,13 +141,9 @@ function gameOver() {
 function respawn() {
     state.hp = state.maxHp;
     state.room = 1;
-    state.gold = Math.floor(state.gold * 0.7); // Теряем 30% золота при смерти
-    
-    enemy.maxHp = 30;
-    enemy.hp = 30;
-    enemy.name = "Гоблин";
-    enemy.color = "#4ade80";
-
+    state.gold = Math.floor(state.gold * 0.7);
+    enemy.maxHp = 30; enemy.hp = 30;
+    enemy.name = "Гоблин"; enemy.color = "#4ade80";
     document.getElementById('death-screen').classList.add('hidden');
     updateUI();
     save();
@@ -112,26 +166,8 @@ function updateUI() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const centerX = canvas.width / 2;
-
-    if (enemy && state.hp > 0) {
-        ctx.fillStyle = enemy.color;
-        ctx.beginPath();
-        const pulse = Math.sin(Date.now() / 300) * 5;
-        ctx.arc(centerX, 150, 45 + pulse, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = "white";
-        ctx.font = "bold 20px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(enemy.name, centerX, 80);
-        
-        // HP врага
-        ctx.fillStyle = "#222";
-        ctx.fillRect(centerX - 60, 210, 120, 10);
-        ctx.fillStyle = "#ff4757";
-        ctx.fillRect(centerX - 60, 210, (enemy.hp / enemy.maxHp) * 120, 10);
-    }
+    // Рисуем монстра в центре
+    drawEnemy(canvas.width / 2, canvas.height / 2 - 20);
 }
 
 function showToast(txt) {
@@ -154,12 +190,9 @@ function save() {
 
 function load() {
     const saved = localStorage.getItem('rpg_save');
-    if (saved) {
-        state = JSON.parse(saved);
-    }
+    if (saved) state = JSON.parse(saved);
 }
 
-// Слушатели событий
 document.getElementById('btn-attack').onclick = attack;
 document.getElementById('btn-respawn').onclick = respawn;
 document.getElementById('btn-heal').onclick = () => {
