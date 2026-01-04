@@ -3,22 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Шахтёр: Редкие Металлы</title>
+    <title>Подземный Квест RPG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game">
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" width="400" height="300"></canvas>
         <div id="ui">
-            <div class="stat"><span>💰 Монеты:</span><span id="coins">0</span></div>
-            <div class="stat"><span>⛏️ Глубина:</span><span id="depth">1м</span></div>
-            <div class="stat"><span>⚡ Скорость:</span><span id="speed">1/с</span></div>
-            <button id="digBtn">⛏️ КОПАТЬ! ⛏️</button>
+            <div class="stat">
+                <span>❤️ HP:</span><span id="hp">100/100</span>
+                <span>⚔️ ATK:</span><span id="atk">10</span>
+                <span>🛡️ DEF:</span><span id="def">5</span>
+            </div>
+            <div class="stat">
+                <span>⭐ Level:</span><span id="level">1</span>
+                <span>💰 Gold:</span><span id="gold">0</span>
+                <span>📍 Комната:</span><span id="room">1/10</span>
+            </div>
+            <div id="battle">
+                <div id="enemy-hp">---</div>
+                <button id="fightBtn">⚔️ БОЙ!</button>
+                <button id="healBtn">💊 Зелье (50g)</button>
+            </div>
             <div id="shop">
-                <div class="upgrade" data-type="pickaxe"><div>Кирпич +1</div><div class="price">50💰</div></div>
-                <div class="upgrade" data-type="auto"><div>Авто-копатель</div><div class="price">200💰</div></div>
-                <div class="upgrade" data-type="depth"><div>Глубже!</div><div class="price">1000💰</div></div>
+                <div class="upgrade" data-type="weapon">Меч +5 ATK (200g)</div>
+                <div class="upgrade" data-type="armor">Броня +5 DEF (300g)</div>
+                <div class="upgrade" data-type="prestige">Престиж x2 (5000g)</div>
             </div>
         </div>
         <div id="message"></div>
