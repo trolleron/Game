@@ -121,10 +121,10 @@ function drawMine() {
         ctx.fillRect(50, i * blockHeight, canvas.width - 100, blockHeight);
 
         // Золотые пиксели (редкая руда)
-        if (Math.random() < 0.1 && depthHere > 10) {
-            ctx.fillStyle = '#FFD700';
-            ctx.fillRect(60 + Math.random() * (canvas.width - 140), i * blockHeight + 5, 20, 20);
-        }
+    //if (Math.random() < 0.1 && depthHere > 10) {
+            //ctx.fillStyle = '#FFD700';
+            //ctx.fillRect(60 + Math.random() * (canvas.width - 140), i * blockHeight + 5, 20, 20);
+        //}
     }
 
     // Шахтёр
