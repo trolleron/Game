@@ -2,133 +2,143 @@ const tg = window.Telegram.WebApp;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Состояние игры
 let state = {
-    player: { hp: 100, maxHp: 100, atk: 10, def: 5, gold: 0, lvl: 1, xp: 0, room: 1 },
-    enemy: null,
-    shop: { weaponLvl: 0, armorLvl: 0 }
+    hp: 100, maxHp: 100, atk: 10, def: 5, gold: 0, lvl: 1, xp: 0, room: 1,
+    weaponLvl: 0, armorLvl: 0
 };
 
-const monsterTypes = [
-    { name: "Слизь", hp: 40, atk: 5, color: "#2ecc71" },
-    { name: "Скелет", hp: 70, atk: 12, color: "#bdc3c7" },
-    { name: "Демон", hp: 120, atk: 20, color: "#e74c3c" }
-];
+let enemy = { name: "Гоблин", hp: 30, maxHp: 30, color: "#4ade80" };
 
-// Инициализация
 function init() {
+    tg.ready();
     tg.expand();
+    window.addEventListener('resize', resize);
     resize();
-    load();
-    spawnEnemy();
+    load(); // Загрузка сохранения
+    updateUI();
     gameLoop();
 }
 
 function resize() {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-}
-
-function spawnEnemy() {
-    const type = monsterTypes[Math.min(Math.floor(state.player.room / 5), monsterTypes.length - 1)];
-    state.enemy = { 
-        ...type, 
-        hp: type.hp + (state.player.room * 5), 
-        maxHp: type.hp + (state.player.room * 5) 
-    };
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
 }
 
 function attack() {
-    if (!state.enemy) return;
+    if (state.hp <= 0) return;
 
-    // Игрок бьет врага
-    const dmgToEnemy = Math.max(2, state.player.atk - (state.player.room * 0.5));
-    state.enemy.hp -= dmgToEnemy;
-    showToast(`-${Math.floor(dmgToEnemy)} HP`, "enemy");
+    // 1. Урон игрока
+    const pDmg = state.atk + (state.weaponLvl * 5);
+    enemy.hp -= pDmg;
+    showToast(`-${pDmg} HP`);
 
-    if (state.enemy.hp <= 0) {
+    if (enemy.hp <= 0) {
         winBattle();
     } else {
-        // Враг бьет игрока
-        setTimeout(() => {
-            const dmgToPlayer = Math.max(1, state.enemy.atk - state.player.def);
-            state.player.hp -= dmgToPlayer;
+        // 2. Урон монстра (возрастает с комнатами)
+        const monsterPower = 8 + Math.floor(state.room * 1.5);
+        const playerDef = state.def + (state.armorLvl * 5);
+        const eDmg = Math.max(2, monsterPower - playerDef);
+        
+        state.hp -= eDmg;
+
+        if (state.hp <= 0) {
+            state.hp = 0;
             updateUI();
-            if (state.player.hp <= 0) gameOver();
-        }, 200);
+            gameOver();
+            return;
+        }
     }
     updateUI();
 }
 
 function winBattle() {
-    const reward = 20 + (state.player.room * 5);
-    const exp = 30;
-    state.player.gold += reward;
-    state.player.xp += exp;
-    state.player.room++;
+    const reward = 20 + state.room * 5;
+    state.gold += reward;
+    state.xp += 40;
+    state.room++;
     
-    showToast(`+${reward} GOLD`, "gold");
-
-    if (state.player.xp >= state.player.lvl * 100) {
-        state.player.lvl++;
-        state.player.xp = 0;
-        state.player.maxHp += 20;
-        state.player.hp = state.player.maxHp;
-        showToast("LEVEL UP!", "accent");
+    if (state.xp >= state.lvl * 100) {
+        state.lvl++;
+        state.xp = 0;
+        state.maxHp += 20;
+        state.hp = state.maxHp;
+        showToast("LEVEL UP!");
     }
+    
+    // Спавн нового врага
+    enemy.maxHp = 30 + (state.room * 10);
+    enemy.hp = enemy.maxHp;
+    enemy.name = state.room % 5 === 0 ? "БОСС" : "Монстр";
+    enemy.color = state.room % 5 === 0 ? "#f97316" : "#4ade80";
+    
+    save();
+}
 
-    spawnEnemy();
+function gameOver() {
+    document.getElementById('final-room').textContent = state.room;
+    document.getElementById('death-screen').classList.remove('hidden');
+}
+
+function respawn() {
+    state.hp = state.maxHp;
+    state.room = 1;
+    state.gold = Math.floor(state.gold * 0.7); // Теряем 30% золота при смерти
+    
+    enemy.maxHp = 30;
+    enemy.hp = 30;
+    enemy.name = "Гоблин";
+    enemy.color = "#4ade80";
+
+    document.getElementById('death-screen').classList.add('hidden');
+    updateUI();
     save();
 }
 
 function updateUI() {
-    document.getElementById('lvl').innerText = state.player.lvl;
-    document.getElementById('gold').innerText = state.player.gold;
-    document.getElementById('room').innerText = state.player.room;
-    
-    document.getElementById('hp-text').innerText = `${Math.floor(state.player.hp)}/${state.player.maxHp}`;
-    document.getElementById('hp-bar').style.width = (state.player.hp / state.player.maxHp * 100) + "%";
-    
-    document.getElementById('xp-text').innerText = `${state.player.xp}/${state.player.lvl * 100}`;
-    document.getElementById('xp-bar').style.width = (state.player.xp / (state.player.lvl * 100) * 100) + "%";
+    document.getElementById('lvl').textContent = state.lvl;
+    document.getElementById('gold').textContent = state.gold;
+    document.getElementById('room').textContent = state.room;
+    document.getElementById('hp-text').textContent = `${Math.floor(state.hp)}/${state.maxHp}`;
+    document.getElementById('hp-bar').style.width = `${(state.hp / state.maxHp) * 100}%`;
+    document.getElementById('xp-text').textContent = `${state.xp}/${state.lvl * 100}`;
+    document.getElementById('xp-bar').style.width = `${(state.xp / (state.lvl * 100)) * 100}%`;
 
-    // Цены в магазине
-    const wPrice = 100 * Math.pow(1.5, state.shop.weaponLvl);
-    const aPrice = 100 * Math.pow(1.5, state.shop.armorLvl);
-    document.querySelector('#up-atk span').innerText = `+5 ATK (${Math.floor(wPrice)}g)`;
-    document.querySelector('#up-def span').innerText = `+5 DEF (${Math.floor(aPrice)}g)`;
-}
-
-function showToast(text, type) {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.innerText = text;
-    document.getElementById('toast-container').appendChild(t);
-    setTimeout(() => t.remove(), 1500);
+    const wPrice = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
+    const aPrice = Math.floor(100 * Math.pow(1.4, state.armorLvl));
+    document.getElementById('atk-price').textContent = `+5 ATK (${wPrice}g)`;
+    document.getElementById('def-price').textContent = `+5 DEF (${aPrice}g)`;
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Рисуем врага (упрощенно)
-    if (state.enemy) {
-        const centerX = canvas.width / 2;
-        ctx.fillStyle = state.enemy.color;
+    const centerX = canvas.width / 2;
+
+    if (enemy && state.hp > 0) {
+        ctx.fillStyle = enemy.color;
         ctx.beginPath();
-        ctx.arc(centerX, 150, 40 + Math.sin(Date.now()/200)*5, 0, Math.PI*2);
+        const pulse = Math.sin(Date.now() / 300) * 5;
+        ctx.arc(centerX, 150, 45 + pulse, 0, Math.PI * 2);
         ctx.fill();
         
         ctx.fillStyle = "white";
-        ctx.textAlign = "center";
         ctx.font = "bold 20px Arial";
-        ctx.fillText(state.enemy.name, centerX, 80);
+        ctx.textAlign = "center";
+        ctx.fillText(enemy.name, centerX, 80);
         
-        // Полоска здоровья врага на канвасе
+        // HP врага
         ctx.fillStyle = "#222";
-        ctx.fillRect(centerX - 50, 200, 100, 10);
+        ctx.fillRect(centerX - 60, 210, 120, 10);
         ctx.fillStyle = "#ff4757";
-        ctx.fillRect(centerX - 50, 200, (state.enemy.hp / state.enemy.maxHp) * 100, 10);
+        ctx.fillRect(centerX - 60, 210, (enemy.hp / enemy.maxHp) * 120, 10);
     }
+}
+
+function showToast(txt) {
+    const t = document.createElement('div');
+    t.className = 'toast'; t.textContent = txt;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 1000);
 }
 
 function gameLoop() {
@@ -136,47 +146,36 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Покупки
-document.getElementById('up-atk').onclick = () => {
-    const price = 100 * Math.pow(1.5, state.shop.weaponLvl);
-    if (state.player.gold >= price) {
-        state.player.gold -= price;
-        state.player.atk += 5;
-        state.shop.weaponLvl++;
-        updateUI();
-        save();
-    }
-};
-
-document.getElementById('btn-attack').onclick = attack;
-document.getElementById('btn-heal').onclick = () => {
-    if (state.player.gold >= 50 && state.player.hp < state.player.maxHp) {
-        state.player.gold -= 50;
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 50);
-        updateUI();
-    }
-};
-
-// Cloud Storage
 function save() {
     const data = JSON.stringify(state);
-    tg.CloudStorage.setItem('save_v1', data);
-    localStorage.setItem('save_v1', data);
+    tg.CloudStorage.setItem('rpg_save', data);
+    localStorage.setItem('rpg_save', data);
 }
 
 function load() {
-    const local = localStorage.getItem('save_v1');
-    if (local) {
-        state = JSON.parse(local);
-        updateUI();
+    const saved = localStorage.getItem('rpg_save');
+    if (saved) {
+        state = JSON.parse(saved);
     }
-    tg.CloudStorage.getItem('save_v1', (err, val) => {
-        if (val) {
-            state = JSON.parse(val);
-            updateUI();
-        }
-    });
 }
 
-window.onresize = resize;
+// Слушатели событий
+document.getElementById('btn-attack').onclick = attack;
+document.getElementById('btn-respawn').onclick = respawn;
+document.getElementById('btn-heal').onclick = () => {
+    if (state.gold >= 50 && state.hp < state.maxHp) {
+        state.gold -= 50;
+        state.hp = Math.min(state.maxHp, state.hp + 50);
+        updateUI();
+    }
+};
+document.getElementById('up-atk').onclick = () => {
+    const price = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
+    if (state.gold >= price) { state.gold -= price; state.weaponLvl++; updateUI(); save(); }
+};
+document.getElementById('up-def').onclick = () => {
+    const price = Math.floor(100 * Math.pow(1.4, state.armorLvl));
+    if (state.gold >= price) { state.gold -= price; state.armorLvl++; updateUI(); save(); }
+};
+
 init();

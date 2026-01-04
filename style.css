@@ -1,93 +1,52 @@
 :root {
-    --bg-color: #0f0f1b;
-    --panel-color: rgba(25, 25, 45, 0.95);
+    --bg-color: #0a0a0f;
+    --panel: #161625;
     --accent: #00d4ff;
     --red: #ff4757;
     --gold: #ffa502;
-    --xp: #2f3542;
 }
 
-body {
-    margin: 0; padding: 0;
-    background: var(--bg-color);
-    color: white;
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    overflow: hidden;
-    user-select: none;
+body, html { 
+    margin: 0; padding: 0; height: 100%; 
+    background: var(--bg-color); color: white;
+    font-family: 'Segoe UI', sans-serif; overflow: hidden;
 }
 
-#game-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+#game-container { position: relative; display: flex; flex-direction: column; height: 100vh; }
 
-.header {
-    display: flex;
-    justify-content: space-around;
-    padding: 10px;
-    background: var(--panel-color);
-    border-bottom: 2px solid #333;
+/* Экран смерти */
+#death-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 10, 15, 0.95);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 1000; text-align: center;
 }
+#death-screen h1 { color: var(--red); font-size: 40px; text-shadow: 0 0 20px var(--red); margin: 0; }
+#death-screen p { font-size: 18px; color: #ccc; margin: 20px 0; }
+#btn-respawn { 
+    padding: 15px 40px; font-size: 20px; background: var(--accent); 
+    border: none; border-radius: 12px; color: black; font-weight: bold; cursor: pointer;
+}
+.hidden { display: none !important; }
 
+#gameCanvas { flex-grow: 1; width: 100%; background: #0f0f1b; display: block; }
+
+.header { display: flex; justify-content: space-around; padding: 10px; background: var(--panel); border-bottom: 1px solid #333; }
 .stat-box { text-align: center; }
 .label { display: block; font-size: 10px; color: var(--accent); font-weight: bold; }
 
-#gameCanvas {
-    flex-grow: 1;
-    background: #161625;
-}
-
-.ui-panel {
-    background: var(--panel-color);
-    padding: 15px;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-}
-
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #222;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    overflow: hidden;
-}
-
-.fill { height: 100%; transition: width 0.3s ease; }
+.ui-panel { background: var(--panel); padding: 15px; border-top: 2px solid #333; }
+.progress-bar { width: 100%; height: 10px; background: #000; border-radius: 5px; margin-bottom: 10px; }
+.fill { height: 100%; border-radius: 5px; transition: width 0.3s ease; }
 .red { background: var(--red); box-shadow: 0 0 10px var(--red); }
 .blue { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 .bar-label { font-size: 12px; margin-bottom: 4px; display: flex; justify-content: space-between; }
 
-.actions { display: flex; gap: 10px; margin: 15px 0; }
-.main-btn {
-    flex: 2; height: 60px; border: none; border-radius: 12px;
-    background: linear-gradient(45deg, #ff4757, #ff6b81);
-    color: white; font-weight: bold; font-size: 18px;
-    box-shadow: 0 4px 0 #b33939;
-}
+.actions { display: flex; gap: 10px; margin: 10px 0; }
+.main-btn { flex: 2; height: 60px; background: linear-gradient(to bottom, #ff4757, #c0392b); border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 4px 0 #8e0000; }
+.main-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #8e0000; }
+.sec-btn, .shop-btn { flex: 1; background: #2f3542; border: 1px solid #444; border-radius: 10px; color: white; font-size: 12px; }
 
-.main-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b33939; }
-
-.sec-btn, .shop-btn {
-    flex: 1; border: 1px solid #444; border-radius: 12px;
-    background: #2f3542; color: white; cursor: pointer;
-}
-
-.shop { display: flex; gap: 10px; }
-.shop-btn span { font-size: 10px; color: var(--gold); }
-
-#toast-container {
-    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
-    pointer-events: none; z-index: 100;
-}
-.toast {
-    background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 20px;
-    color: var(--gold); margin-bottom: 5px; animation: floatUp 1.5s forwards;
-}
-
-@keyframes floatUp {
-    0% { opacity: 0; transform: translateY(0); }
-    20% { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-50px); }
-}
+#toast-container { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); pointer-events: none; }
+.toast { background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 15px; color: var(--gold); margin: 5px; animation: up 1s forwards; }
+@keyframes up { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
