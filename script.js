@@ -1,6 +1,4 @@
 const tg = window.Telegram.WebApp;
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
 
 let state = {
     hp: 100, maxHp: 100, atk: 10, def: 5, gold: 0, lvl: 1, xp: 0, room: 1,
@@ -9,114 +7,126 @@ let state = {
     critMultiplier: 2 // Множитель критического урона (x2)
 };
 
-let enemy = { name: "Гоблин", hp: 30, maxHp: 30, color: "#4ade80", type: "slime" };
+// Ссылки на спрайты. Замените их на свои!
+const SPRITES = {
+    player: 'https://i.imgur.com/G5iM8qF.png', // Пример: Рыцарь
+    monster: {
+        goblin: 'https://i.imgur.com/R3p4f0U.png', // Пример: Гоблин
+        skeleton: 'https://i.imgur.com/1G2Z7vP.png', // Пример: Скелет
+        boss: 'https://i.imgur.com/v8t7s8X.png' // Пример: Демон-босс
+    }
+};
+
+let enemy = { 
+    name: "Гоблин", 
+    hp: 30, maxHp: 30, 
+    sprite: SPRITES.monster.goblin, 
+    baseAtk: 8 // Базовая атака монстра
+};
+
+// Элементы DOM
+const elements = {
+    lvl: document.getElementById('lvl'),
+    gold: document.getElementById('gold'),
+    room: document.getElementById('room'),
+    hpText: document.getElementById('hp-text'),
+    hpBar: document.getElementById('hp-bar'),
+    xpText: document.getElementById('xp-text'),
+    xpBar: document.getElementById('xp-bar'),
+    atkValue: document.getElementById('atk-value'),
+    defValue: document.getElementById('def-value'),
+    enemyName: document.getElementById('enemy-name'),
+    enemyHpFill: document.getElementById('enemy-hp-fill'),
+    enemySprite: document.getElementById('enemy-sprite'),
+    playerSprite: document.getElementById('player-sprite'),
+    toastContainer: document.getElementById('toast-container'),
+    deathScreen: document.getElementById('death-screen'),
+    finalRoom: document.getElementById('final-room'),
+    btnAttack: document.getElementById('btn-attack'),
+    btnHeal: document.getElementById('btn-heal'),
+    upAtk: document.getElementById('up-atk'),
+    upDef: document.getElementById('up-def'),
+    atkPrice: document.getElementById('atk-price'),
+    defPrice: document.getElementById('def-price'),
+    btnRespawn: document.getElementById('btn-respawn')
+};
 
 function init() {
     tg.ready();
     tg.expand();
-    window.addEventListener('resize', resize);
-    resize();
-    load();
+    load(); // Загрузка сохранения
+    elements.playerSprite.src = SPRITES.player; // Устанавливаем спрайт героя
+    spawnEnemy(); // Спавним первого врага
     updateUI();
-    gameLoop();
-}
-
-function resize() {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-}
-
-// РИСОВАНИЕ МОНСТРА С ТЕЛОМ (без изменений, из предыдущего ответа)
-function drawEnemy(x, y) {
-    const time = Date.now() / 300;
-    const bounce = Math.sin(time) * 5;
     
-    ctx.save();
-    ctx.translate(x, y + bounce);
+    // Привязываем события к кнопкам
+    elements.btnAttack.onclick = attack;
+    elements.btnHeal.onclick = heal;
+    elements.upAtk.onclick = () => upgrade('atk');
+    elements.upDef.onclick = () => upgrade('def');
+    elements.btnRespawn.onclick = respawn;
+}
 
-    // Цвет монстра (тело)
-    ctx.fillStyle = enemy.color;
+function spawnEnemy() {
+    const roomFactor = Math.floor(state.room / 5);
+    let monsterType = 'goblin';
+    let monsterName = 'Гоблин';
+    let monsterSprite = SPRITES.monster.goblin;
+    let baseHp = 30;
+    let baseAtk = 8;
 
-    if (enemy.name === "БОСС") {
-        // Отрисовка крупного рогатого монстра
-        ctx.fillRect(-50, -20, 100, 80); // Тело
-        ctx.fillRect(-60, 20, 20, 40);   // Левая рука
-        ctx.fillRect(40, 20, 20, 40);    // Правая рука
-        // Рога
-        ctx.beginPath();
-        ctx.moveTo(-40, -20); ctx.lineTo(-60, -50); ctx.lineTo(-20, -20); ctx.fill();
-        ctx.moveTo(40, -20); ctx.lineTo(60, -50); ctx.lineTo(20, -20); ctx.fill();
-    } else {
-        // Отрисовка обычного гоблина/существа
-        // Тело-капля
-        ctx.beginPath();
-        ctx.ellipse(0, 20, 45, 55, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Уши
-        ctx.beginPath();
-        ctx.moveTo(-35, -10); ctx.lineTo(-55, -30); ctx.lineTo(-20, 5); ctx.fill();
-        ctx.moveTo(35, -10); ctx.lineTo(55, -30); ctx.lineTo(20, 5); ctx.fill();
+    if (state.room % 5 === 0) { // Каждая 5-я комната - босс
+        monsterType = 'boss';
+        monsterName = 'БОСС';
+        monsterSprite = SPRITES.monster.boss;
+        baseHp = 100;
+        baseAtk = 25;
+    } else if (state.room % 3 === 0) { // Каждая 3-я комната - скелет
+        monsterType = 'skeleton';
+        monsterName = 'Скелет';
+        monsterSprite = SPRITES.monster.skeleton;
+        baseHp = 50;
+        baseAtk = 15;
     }
 
-    // Глаза (общие для всех)
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.arc(-15, -5, 8, 0, Math.PI * 2);
-    ctx.arc(15, -5, 8, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Зрачки (двигаются за игроком)
-    ctx.fillStyle = "black";
-    ctx.beginPath();
-    ctx.arc(-15, -5, 4, 0, Math.PI * 2);
-    ctx.arc(15, -5, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-
-    // Полоска здоровья над головой
-    ctx.fillStyle = "#222";
-    ctx.fillRect(x - 50, y - 90, 100, 8);
-    ctx.fillStyle = "#ff4757";
-    ctx.fillRect(x - 50, y - 90, (enemy.hp / enemy.maxHp) * 100, 8);
-    
-    ctx.fillStyle = "white";
-    ctx.font = "bold 18px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(enemy.name, x, y - 105);
+    enemy = { 
+        name: monsterName,
+        hp: baseHp + (state.room * 5), // HP растет с комнатой
+        maxHp: baseHp + (state.room * 5),
+        sprite: monsterSprite,
+        baseAtk: baseAtk + (state.room * 2) // Атака растет с комнатой
+    };
+    elements.enemySprite.src = enemy.sprite; // Обновляем спрайт врага
 }
-
 
 function attack() {
     if (state.hp <= 0) return;
 
-    // Тряска экрана
-    document.getElementById('gameCanvas').classList.add('shake');
-    setTimeout(() => document.getElementById('gameCanvas').classList.remove('shake'), 300);
+    // Анимация тряски врага
+    elements.enemySprite.style.transform = 'scaleX(-1) translateX(5px)'; // Немного трясем
+    setTimeout(() => elements.enemySprite.style.transform = 'scaleX(-1) translateX(0)', 100);
 
-    // Урон врагу
+    // Урон игрока
     let pDmg = state.atk + (state.weaponLvl * 5);
-    let isCrit = false;
-
+    
     // Проверка на критический удар
     if (Math.random() < state.critChance) {
         pDmg = Math.floor(pDmg * state.critMultiplier);
-        isCrit = true;
-        showToast('CRIT!', 'crit'); // Показываем "CRIT!"
+        showToast('CRIT!', 'crit');
     }
 
     enemy.hp -= pDmg;
-    showToast(`-${pDmg} HP`); // Показываем урон
+    showToast(`-${pDmg} HP`);
 
     if (enemy.hp <= 0) {
         winBattle();
     } else {
-        // Урон игроку
-        const monsterPower = 8 + Math.floor(state.room * 1.5);
+        // Урон монстра
         const playerDef = state.def + (state.armorLvl * 5);
-        const eDmg = Math.max(2, monsterPower - playerDef);
+        const eDmg = Math.max(2, enemy.baseAtk - playerDef); // Используем baseAtk монстра
         
         state.hp -= eDmg;
+
         if (state.hp <= 0) {
             state.hp = 0;
             updateUI();
@@ -133,95 +143,116 @@ function winBattle() {
     state.room++;
     
     if (state.xp >= state.lvl * 100) {
-        state.lvl++; state.xp = 0;
-        state.maxHp += 20; state.hp = state.maxHp;
+        state.xp -= (state.lvl * 100); // Вычитаем, а не обнуляем
+        state.lvl++;
+        state.maxHp += 20;
+        state.hp = state.maxHp;
         showToast("LEVEL UP!");
     }
     
-    enemy.maxHp = 30 + (state.room * 10);
-    enemy.hp = enemy.maxHp;
-    enemy.name = state.room % 5 === 0 ? "БОСС" : "Монстр";
-    enemy.color = state.room % 5 === 0 ? "#ef4444" : "#4ade80";
+    spawnEnemy(); // Спавним нового врага с новой логикой
     save();
+    updateUI(); // Обновляем UI после победы и спавна нового врага
 }
 
 function gameOver() {
-    document.getElementById('final-room').textContent = state.room;
-    document.getElementById('death-screen').classList.remove('hidden');
+    elements.finalRoom.textContent = state.room;
+    elements.deathScreen.classList.remove('hidden');
 }
 
 function respawn() {
     state.hp = state.maxHp;
     state.room = 1;
-    state.gold = Math.floor(state.gold * 0.7);
-    enemy.maxHp = 30; enemy.hp = 30;
-    enemy.name = "Гоблин"; enemy.color = "#4ade80";
-    document.getElementById('death-screen').classList.add('hidden');
+    state.gold = Math.floor(state.gold * 0.7); // Теряем 30% золота
+    
+    spawnEnemy(); // Спавним нового гоблина
+    elements.deathScreen.classList.add('hidden');
     updateUI();
     save();
 }
 
-function updateUI() {
-    document.getElementById('lvl').textContent = state.lvl;
-    document.getElementById('gold').textContent = state.gold;
-    document.getElementById('room').textContent = state.room;
-    document.getElementById('hp-text').textContent = `${Math.floor(state.hp)}/${state.maxHp}`;
-    document.getElementById('hp-bar').style.width = `${(state.hp / state.maxHp) * 100}%`;
-    document.getElementById('xp-text').textContent = `${state.xp}/${state.lvl * 100}`;
-    document.getElementById('xp-bar').style.width = `${(state.xp / (state.lvl * 100)) * 100}%`;
-
-    const wPrice = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
-    const aPrice = Math.floor(100 * Math.pow(1.4, state.armorLvl));
-    document.getElementById('atk-price').textContent = `+5 ATK (${wPrice}g)`;
-    document.getElementById('def-price').textContent = `+5 DEF (${aPrice}g)`;
+function heal() {
+    if (state.gold >= 50 && state.hp < state.maxHp) {
+        state.gold -= 50;
+        state.hp = Math.min(state.maxHp, state.hp + 50);
+        showToast('+50 HP', 'heal'); // Новый тип тоста для лечения
+        updateUI();
+        save();
+    } else if (state.hp >= state.maxHp) {
+        showToast('HP полное!', 'info');
+    } else {
+        showToast('Недостаточно золота!', 'info');
+    }
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawEnemy(canvas.width / 2, canvas.height / 2 - 20);
+function upgrade(type) {
+    let price;
+    if (type === 'atk') {
+        price = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
+        if (state.gold >= price) { state.gold -= price; state.weaponLvl++; state.atk += 5; showToast('+5 ATK!'); }
+        else { showToast('Недостаточно золота!', 'info'); }
+    } else if (type === 'def') {
+        price = Math.floor(100 * Math.pow(1.4, state.armorLvl));
+        if (state.gold >= price) { state.gold -= price; state.armorLvl++; state.def += 5; showToast('+5 DEF!'); }
+        else { showToast('Недостаточно золота!', 'info'); }
+    }
+    updateUI();
+    save();
+}
+
+
+function updateUI() {
+    elements.lvl.textContent = state.lvl;
+    elements.gold.textContent = state.gold;
+    elements.room.textContent = state.room;
+
+    elements.hpText.textContent = `${Math.floor(state.hp)}/${state.maxHp}`;
+    elements.hpBar.style.width = `${(state.hp / state.maxHp) * 100}%`;
+    elements.xpText.textContent = `${state.xp}/${state.lvl * 100}`;
+    elements.xpBar.style.width = `${(state.xp / (state.lvl * 100)) * 100}%`;
+
+    elements.atkValue.textContent = state.atk + (state.weaponLvl * 5);
+    elements.defValue.textContent = state.def + (state.armorLvl * 5);
+
+    // Обновление UI врага
+    elements.enemyName.textContent = enemy.name;
+    elements.enemyHpFill.style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+
+    // Обновление цен в магазине
+    const wPrice = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
+    const aPrice = Math.floor(100 * Math.pow(1.4, state.armorLvl));
+    elements.atkPrice.textContent = `+5 ATK (${wPrice}g)`;
+    elements.defPrice.textContent = `+5 DEF (${aPrice}g)`;
 }
 
 // showToast теперь принимает необязательный аргумент `type`
 function showToast(txt, type = 'normal') {
     const t = document.createElement('div');
-    t.className = `toast ${type}`; // Добавляем класс для типа
+    t.className = `toast ${type}`;
     t.textContent = txt;
-    document.getElementById('toast-container').appendChild(t);
-    setTimeout(() => t.remove(), 1000);
-}
-
-function gameLoop() {
-    draw();
-    requestAnimationFrame(gameLoop);
+    elements.toastContainer.appendChild(t);
+    // Добавляем короткую задержку перед удалением тоста, чтобы анимация успела отработать
+    setTimeout(() => t.remove(), 1200); 
 }
 
 function save() {
     const data = JSON.stringify(state);
-    tg.CloudStorage.setItem('rpg_save', data);
-    localStorage.setItem('rpg_save', data);
+    tg.CloudStorage.setItem('rpg_save_v2', data); // Изменил ключ сохранения
+    localStorage.setItem('rpg_save_v2', data);
 }
 
 function load() {
-    const saved = localStorage.getItem('rpg_save');
-    if (saved) state = JSON.parse(saved);
+    const saved = localStorage.getItem('rpg_save_v2'); // Изменил ключ
+    if (saved) {
+        Object.assign(state, JSON.parse(saved));
+    } else {
+        // Если нет локального сохранения, пробуем облако
+        tg.CloudStorage.getItem('rpg_save_v2', (err, val) => {
+            if (val) Object.assign(state, JSON.parse(val));
+            updateUI(); // Обновляем UI после загрузки
+        });
+    }
 }
 
-document.getElementById('btn-attack').onclick = attack;
-document.getElementById('btn-respawn').onclick = respawn;
-document.getElementById('btn-heal').onclick = () => {
-    if (state.gold >= 50 && state.hp < state.maxHp) {
-        state.gold -= 50;
-        state.hp = Math.min(state.maxHp, state.hp + 50);
-        updateUI();
-    }
-};
-document.getElementById('up-atk').onclick = () => {
-    const price = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
-    if (state.gold >= price) { state.gold -= price; state.weaponLvl++; updateUI(); save(); }
-};
-document.getElementById('up-def').onclick = () => {
-    const price = Math.floor(100 * Math.pow(1.4, state.armorLvl));
-    if (state.gold >= price) { state.gold -= price; state.armorLvl++; updateUI(); save(); }
-};
-
+// Запускаем инициализацию игры
 init();
