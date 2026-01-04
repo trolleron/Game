@@ -3,28 +3,22 @@ const tg = window.Telegram.WebApp;
 let state = {
     hp: 100, maxHp: 100, atk: 10, def: 5, gold: 0, lvl: 1, xp: 0, room: 1,
     weaponLvl: 0, armorLvl: 0,
-    critChance: 0.20, // Шанс критического удара (20%)
-    critMultiplier: 2 // Множитель критического урона (x2)
+    critChance: 0.15, 
+    critMultiplier: 2
 };
 
-// Ссылки на спрайты. Замените их на свои!
+// РАБОЧИЕ ССЫЛКИ НА КАРТИНКИ
 const SPRITES = {
-    player: 'https://i.imgur.com/G5iM8qF.png', // Пример: Рыцарь
+    player: 'https://img.itch.zone/aW1nLzExNDI1OTI5LnBuZw==/original/m966Ph.png', // Рыцарь
     monster: {
-        goblin: 'https://i.imgur.com/R3p4f0U.png', // Пример: Гоблин
-        skeleton: 'https://i.imgur.com/1G2Z7vP.png', // Пример: Скелет
-        boss: 'https://i.imgur.com/v8t7s8X.png' // Пример: Демон-босс
+        goblin: 'https://img.itch.zone/aW1nLzExNDI1OTI4LnBuZw==/original/70M9x3.png', // Гоблин
+        skeleton: 'https://img.itch.zone/aW1nLzExNDI1OTMwLnBuZw==/original/hP6Y%2Bx.png', // Скелет
+        boss: 'https://img.itch.zone/aW1nLzExNDI1OTI3LnBuZw==/original/7%2F7vGk.png' // Демон
     }
 };
 
-let enemy = { 
-    name: "Гоблин", 
-    hp: 30, maxHp: 30, 
-    sprite: SPRITES.monster.goblin, 
-    baseAtk: 8 // Базовая атака монстра
-};
+let enemy = { name: "Гоблин", hp: 30, maxHp: 30, sprite: SPRITES.monster.goblin, baseAtk: 8 };
 
-// Элементы DOM
 const elements = {
     lvl: document.getElementById('lvl'),
     gold: document.getElementById('gold'),
@@ -54,12 +48,11 @@ const elements = {
 function init() {
     tg.ready();
     tg.expand();
-    load(); // Загрузка сохранения
-    elements.playerSprite.src = SPRITES.player; // Устанавливаем спрайт героя
-    spawnEnemy(); // Спавним первого врага
+    load();
+    elements.playerSprite.src = SPRITES.player;
+    spawnEnemy();
     updateUI();
     
-    // Привязываем события к кнопкам
     elements.btnAttack.onclick = attack;
     elements.btnHeal.onclick = heal;
     elements.upAtk.onclick = () => upgrade('atk');
@@ -68,51 +61,34 @@ function init() {
 }
 
 function spawnEnemy() {
-    const roomFactor = Math.floor(state.room / 5);
-    let monsterType = 'goblin';
-    let monsterName = 'Гоблин';
-    let monsterSprite = SPRITES.monster.goblin;
-    let baseHp = 30;
-    let baseAtk = 8;
+    let type = 'goblin';
+    if (state.room % 10 === 0) type = 'boss';
+    else if (state.room % 3 === 0) type = 'skeleton';
 
-    if (state.room % 5 === 0) { // Каждая 5-я комната - босс
-        monsterType = 'boss';
-        monsterName = 'БОСС';
-        monsterSprite = SPRITES.monster.boss;
-        baseHp = 100;
-        baseAtk = 25;
-    } else if (state.room % 3 === 0) { // Каждая 3-я комната - скелет
-        monsterType = 'skeleton';
-        monsterName = 'Скелет';
-        monsterSprite = SPRITES.monster.skeleton;
-        baseHp = 50;
-        baseAtk = 15;
-    }
-
+    const names = { goblin: 'Гоблин', skeleton: 'Скелет', boss: 'ВЛАДЫКА' };
+    
     enemy = { 
-        name: monsterName,
-        hp: baseHp + (state.room * 5), // HP растет с комнатой
-        maxHp: baseHp + (state.room * 5),
-        sprite: monsterSprite,
-        baseAtk: baseAtk + (state.room * 2) // Атака растет с комнатой
+        name: names[type],
+        hp: (type === 'boss' ? 150 : 30) + (state.room * 7),
+        maxHp: (type === 'boss' ? 150 : 30) + (state.room * 7),
+        sprite: SPRITES.monster[type],
+        baseAtk: (type === 'boss' ? 20 : 8) + (state.room * 1.5)
     };
-    elements.enemySprite.src = enemy.sprite; // Обновляем спрайт врага
+    elements.enemySprite.src = enemy.sprite;
+    elements.enemyName.textContent = enemy.name;
 }
 
 function attack() {
     if (state.hp <= 0) return;
 
-    // Анимация тряски врага
-    elements.enemySprite.style.transform = 'scaleX(-1) translateX(5px)'; // Немного трясем
-    setTimeout(() => elements.enemySprite.style.transform = 'scaleX(-1) translateX(0)', 100);
+    // Анимация удара
+    elements.playerSprite.style.transform = 'scale(1.2) translateY(-20px)';
+    setTimeout(() => elements.playerSprite.style.transform = 'scale(1)', 100);
 
-    // Урон игрока
     let pDmg = state.atk + (state.weaponLvl * 5);
-    
-    // Проверка на критический удар
     if (Math.random() < state.critChance) {
-        pDmg = Math.floor(pDmg * state.critMultiplier);
-        showToast('CRIT!', 'crit');
+        pDmg *= state.critMultiplier;
+        showToast('КРИТ!', 'crit');
     }
 
     enemy.hp -= pDmg;
@@ -121,18 +97,12 @@ function attack() {
     if (enemy.hp <= 0) {
         winBattle();
     } else {
-        // Урон монстра
-        const playerDef = state.def + (state.armorLvl * 5);
-        const eDmg = Math.max(2, enemy.baseAtk - playerDef); // Используем baseAtk монстра
-        
-        state.hp -= eDmg;
-
-        if (state.hp <= 0) {
-            state.hp = 0;
+        setTimeout(() => {
+            const eDmg = Math.max(2, Math.floor(enemy.baseAtk - (state.def + state.armorLvl * 3)));
+            state.hp -= eDmg;
             updateUI();
-            gameOver();
-            return;
-        }
+            if (state.hp <= 0) gameOver();
+        }, 200);
     }
     updateUI();
 }
@@ -141,18 +111,12 @@ function winBattle() {
     state.gold += 20 + state.room * 5;
     state.xp += 40;
     state.room++;
-    
     if (state.xp >= state.lvl * 100) {
-        state.xp -= (state.lvl * 100); // Вычитаем, а не обнуляем
-        state.lvl++;
-        state.maxHp += 20;
-        state.hp = state.maxHp;
-        showToast("LEVEL UP!");
+        state.lvl++; state.xp = 0;
+        state.maxHp += 20; state.hp = state.maxHp;
     }
-    
-    spawnEnemy(); // Спавним нового врага с новой логикой
+    spawnEnemy();
     save();
-    updateUI(); // Обновляем UI после победы и спавна нового врага
 }
 
 function gameOver() {
@@ -163,96 +127,61 @@ function gameOver() {
 function respawn() {
     state.hp = state.maxHp;
     state.room = 1;
-    state.gold = Math.floor(state.gold * 0.7); // Теряем 30% золота
-    
-    spawnEnemy(); // Спавним нового гоблина
+    state.gold = Math.floor(state.gold * 0.5);
+    spawnEnemy();
     elements.deathScreen.classList.add('hidden');
     updateUI();
-    save();
+}
+
+function upgrade(type) {
+    const price = Math.floor(100 * Math.pow(1.5, type === 'atk' ? state.weaponLvl : state.armorLvl));
+    if (state.gold >= price) {
+        state.gold -= price;
+        if (type === 'atk') state.weaponLvl++;
+        else state.armorLvl++;
+        updateUI();
+        save();
+    }
 }
 
 function heal() {
     if (state.gold >= 50 && state.hp < state.maxHp) {
         state.gold -= 50;
         state.hp = Math.min(state.maxHp, state.hp + 50);
-        showToast('+50 HP', 'heal'); // Новый тип тоста для лечения
         updateUI();
-        save();
-    } else if (state.hp >= state.maxHp) {
-        showToast('HP полное!', 'info');
-    } else {
-        showToast('Недостаточно золота!', 'info');
     }
 }
-
-function upgrade(type) {
-    let price;
-    if (type === 'atk') {
-        price = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
-        if (state.gold >= price) { state.gold -= price; state.weaponLvl++; state.atk += 5; showToast('+5 ATK!'); }
-        else { showToast('Недостаточно золота!', 'info'); }
-    } else if (type === 'def') {
-        price = Math.floor(100 * Math.pow(1.4, state.armorLvl));
-        if (state.gold >= price) { state.gold -= price; state.armorLvl++; state.def += 5; showToast('+5 DEF!'); }
-        else { showToast('Недостаточно золота!', 'info'); }
-    }
-    updateUI();
-    save();
-}
-
 
 function updateUI() {
     elements.lvl.textContent = state.lvl;
     elements.gold.textContent = state.gold;
     elements.room.textContent = state.room;
-
-    elements.hpText.textContent = `${Math.floor(state.hp)}/${state.maxHp}`;
+    elements.hpText.textContent = `${Math.max(0, Math.floor(state.hp))}/${state.maxHp}`;
     elements.hpBar.style.width = `${(state.hp / state.maxHp) * 100}%`;
-    elements.xpText.textContent = `${state.xp}/${state.lvl * 100}`;
     elements.xpBar.style.width = `${(state.xp / (state.lvl * 100)) * 100}%`;
-
-    elements.atkValue.textContent = state.atk + (state.weaponLvl * 5);
-    elements.defValue.textContent = state.def + (state.armorLvl * 5);
-
-    // Обновление UI врага
-    elements.enemyName.textContent = enemy.name;
     elements.enemyHpFill.style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
-
-    // Обновление цен в магазине
-    const wPrice = Math.floor(100 * Math.pow(1.4, state.weaponLvl));
-    const aPrice = Math.floor(100 * Math.pow(1.4, state.armorLvl));
-    elements.atkPrice.textContent = `+5 ATK (${wPrice}g)`;
-    elements.defPrice.textContent = `+5 DEF (${aPrice}g)`;
+    elements.atkValue.textContent = state.atk + (state.weaponLvl * 5);
+    elements.defValue.textContent = state.def + (state.armorLvl * 3);
+    
+    elements.atkPrice.textContent = `+5 ATK (${Math.floor(100 * Math.pow(1.5, state.weaponLvl))}g)`;
+    elements.defPrice.textContent = `+5 DEF (${Math.floor(100 * Math.pow(1.5, state.armorLvl))}g)`;
 }
 
-// showToast теперь принимает необязательный аргумент `type`
-function showToast(txt, type = 'normal') {
+function showToast(txt, type = '') {
     const t = document.createElement('div');
     t.className = `toast ${type}`;
     t.textContent = txt;
     elements.toastContainer.appendChild(t);
-    // Добавляем короткую задержку перед удалением тоста, чтобы анимация успела отработать
-    setTimeout(() => t.remove(), 1200); 
+    setTimeout(() => t.remove(), 1000);
 }
 
 function save() {
-    const data = JSON.stringify(state);
-    tg.CloudStorage.setItem('rpg_save_v2', data); // Изменил ключ сохранения
-    localStorage.setItem('rpg_save_v2', data);
+    localStorage.setItem('rpg_save_v3', JSON.stringify(state));
 }
 
 function load() {
-    const saved = localStorage.getItem('rpg_save_v2'); // Изменил ключ
-    if (saved) {
-        Object.assign(state, JSON.parse(saved));
-    } else {
-        // Если нет локального сохранения, пробуем облако
-        tg.CloudStorage.getItem('rpg_save_v2', (err, val) => {
-            if (val) Object.assign(state, JSON.parse(val));
-            updateUI(); // Обновляем UI после загрузки
-        });
-    }
+    const s = localStorage.getItem('rpg_save_v3');
+    if (s) state = JSON.parse(s);
 }
 
-// Запускаем инициализацию игры
 init();
