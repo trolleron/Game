@@ -6,160 +6,45 @@
     <title>Шахтёр: Добыча Редких Металлов</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(to bottom, #001122, #000011);
-            color: white;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        #game {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            max-width: 100vw;
-        }
-        #canvas {
-            flex: 1;
-            background: #111;
-            border-bottom: 2px solid #333;
-            touch-action: none;
-        }
-        #ui {
-            padding: 10px;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .stat {
-            display: flex;
-            justify-content: space-between;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        #digBtn {
-            background: linear-gradient(45deg, #ffaa00, #ff6600);
-            border: none;
-            border-radius: 15px;
-            font-size: 24px;
-            font-weight: bold;
-            padding: 20px;
-            color: white;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.1s;
-            box-shadow: 0 5px 15px rgba(255,170,0,0.5);
-        }
-        #digBtn:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 5px rgba(255,170,0,0.3);
-        }
-        #shop {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .upgrade {
-            background: rgba(0,255,0,0.2);
-            border: 2px solid #00ff00;
-            border-radius: 10px;
-            padding: 10px;
-            flex: 1;
-            min-width: 120px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; background: linear-gradient(to bottom, #001122, #000011); color: white; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        #game { display: flex; flex-direction: column; height: 100vh; max-width: 100vw; }
+        #canvas { flex: 1; background: #111; border-bottom: 2px solid #333; touch-action: none; }
+        #ui { padding: 10px; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 10px; }
+        .stat { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; }
+        #digBtn { background: linear-gradient(45deg, #ffaa00, #ff6600); border: none; border-radius: 15px; font-size: 24px; font-weight: bold; padding: 20px; color: white; cursor: pointer; user-select: none; transition: all 0.1s; box-shadow: 0 5px 15px rgba(255,170,0,0.5); }
+        #digBtn:active { transform: scale(0.95); box-shadow: 0 2px 5px rgba(255,170,0,0.3); }
+        #shop { display: flex; gap: 10px; flex-wrap: wrap; }
+        .upgrade { background: rgba(0,255,0,0.2); border: 2px solid #00ff00; border-radius: 10px; padding: 10px; flex: 1; min-width: 120px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .upgrade.afford { background: rgba(0,255,0,0.4); }
         .upgrade:not(.afford) { opacity: 0.5; cursor: not-allowed; }
         .upgrade:active { transform: scale(0.98); }
         .price { color: #ffd700; font-weight: bold; }
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 32px;
-            font-weight: bold;
-            color: #ffd700;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s;
-            text-shadow: 2px 2px 4px #000;
-            z-index: 10;
-        }
-        .ore {
-            position: absolute;
-            font-size: 40px;
-            pointer-events: none;
-            opacity: 0;
-            transition: all 1s;
-            z-index: 5;
-        }
+        #message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; font-weight: bold; color: #ffd700; pointer-events: none; opacity: 0; transition: opacity 0.5s; text-shadow: 2px 2px 4px #000; z-index: 10; }
+        .ore { position: absolute; font-size: 40px; pointer-events: none; opacity: 0; transition: all 1s; z-index: 5; }
     </style>
 </head>
 <body>
     <div id="game">
-        <canvas id="canvas" width="400" height="300"></canvas>
+        <canvas id="canvas"></canvas>
         <div id="ui">
-            <div class="stat">
-                <span>💰 Монеты:</span>
-                <span id="coins">0</span>
-            </div>
-            <div class="stat">
-                <span>⛏️ Глубина:</span>
-                <span id="depth">1м</span>
-            </div>
-            <div class="stat">
-                <span>⚡ Скорость:</span>
-                <span id="speed">1/с</span>
-            </div>
+            <div class="stat"><span>💰 Монеты:</span><span id="coins">0</span></div>
+            <div class="stat"><span>⛏️ Глубина:</span><span id="depth">1м</span></div>
+            <div class="stat"><span>⚡ Скорость:</span><span id="speed">1/с</span></div>
             <button id="digBtn">⛏️ КОПАТЬ! ⛏️</button>
             <div id="shop">
-                <div class="upgrade" data-type="pickaxe">
-                    <div>Кирпич +1</div>
-                    <div class="price" data-price="50">50💰</div>
-                </div>
-                <div class="upgrade" data-type="auto">
-                    <div>Авто-копатель</div>
-                    <div class="price" data-price="200">200💰</div>
-                </div>
-                <div class="upgrade" data-type="depth">
-                    <div>Глубже!</div>
-                    <div class="price" data-price="1000">1000💰</div>
-                </div>
+                <div class="upgrade" data-type="pickaxe"><div>Кирпич +1</div><div class="price" data-price="50">50💰</div></div>
+                <div class="upgrade" data-type="auto"><div>Авто-копатель</div><div class="price" data-price="200">200💰</div></div>
+                <div class="upgrade" data-type="depth"><div>Глубже!</div><div class="price" data-price="1000">1000💰</div></div>
             </div>
         </div>
         <div id="message"></div>
     </div>
 
     <script>
-        // Telegram WebApp интеграция
         let tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        document.body.style.background = tg.themeParams.bg_color || '#001122';
-        // Применяем цвета Telegram
-        const colors = tg.themeParams;
-        document.documentElement.style.setProperty('--tg-color-scheme', tg.colorScheme);
-        document.documentElement.style.setProperty('--tg-bg-color', colors.bg_color);
-        document.documentElement.style.setProperty('--tg-secondary-bg-color', colors.secondary_bg_color);
+        tg.ready(); tg.expand();
 
-        // Игра состояние
-        let game = {
-            coins: 0,
-            depth: 1,
-            pickaxePower: 1,
-            autoMiners: 0,
-            autoPower: 1,
-            lastTime: 0,
-            saveInterval: 0
-        };
+        let game = { coins: 0, depth: 1, pickaxePower: 1, autoMiners: 0, autoPower: 1, lastTime: 0, saveInterval: 0 };
 
         const ores = [
             { name: '🪨', value: 1, minDepth: 1, chance: 0.8 },
@@ -171,42 +56,42 @@
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        let canvasWidth = canvas.width;
-        let canvasHeight = canvas.height;
+        function resizeCanvas() { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-        // Адаптация под размер экрана
-        function resizeCanvas() {
-            canvasWidth = canvas.clientWidth;
-            canvasHeight = canvas.clientHeight;
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
+        // Форматирование чисел
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toLocaleString();
+            const units = ['', 'k', 'M', 'B', 'T'];
+            let i = 0;
+            while (num >= 1000 && i < units.length - 1) { num /= 1000; i++; }
+            return num.toFixed(2).replace(/\.00$/, '') + units[i];
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
-        // Загрузка сохранения
+        function formatDepth(meters) {
+            if (meters < 1000) return Math.floor(meters) + 'м';
+            const units = ['км', 'Мм', 'Гм', 'Тм'];
+            let val = meters / 1000;
+            let i = 0;
+            while (val >= 1000 && i < units.length - 1) { val /= 1000; i++; }
+            return val.toFixed(2).replace(/\.00$/, '') + ' ' + units[i];
+        }
+
         async function loadGame() {
             try {
                 const data = await tg.CloudStorage.getItems(['gameSave']);
-                if (data['gameSave']) {
-                    Object.assign(game, JSON.parse(data['gameSave']));
-                }
+                if (data['gameSave']) Object.assign(game, JSON.parse(data['gameSave']));
             } catch (e) {
-                console.log('No cloud save, using local');
                 const local = localStorage.getItem('minerSave');
                 if (local) Object.assign(game, JSON.parse(local));
             }
         }
-        // Сохранение
+
         async function saveGame() {
-            try {
-                await tg.CloudStorage.setItem('gameSave', JSON.stringify(game));
-            } catch (e) {
-                localStorage.setItem('minerSave', JSON.stringify(game));
-            }
+            try { await tg.CloudStorage.setItem('gameSave', JSON.stringify(game)); }
+            catch (e) { localStorage.setItem('minerSave', JSON.stringify(game)); }
         }
 
-        // Получить руду по глубине
         function getOre() {
             const rand = Math.random();
             let cumulative = 0;
@@ -216,176 +101,117 @@
                     if (rand < cumulative) return ore;
                 }
             }
-            return ores[0]; // default stone
+            return ores[0];
         }
 
-        // Анимация находки
         function showOre(x, y, ore) {
             const elem = document.createElement('div');
-            elem.className = 'ore';
-            elem.innerHTML = ore.name;
-            elem.style.left = x + 'px';
-            elem.style.top = y + 'px';
+            elem.className = 'ore'; elem.innerHTML = ore.name;
+            elem.style.left = x + 'px'; elem.style.top = y + 'px';
             document.body.appendChild(elem);
-            setTimeout(() => {
-                elem.style.opacity = '1';
-                elem.style.transform = 'translateY(-50px) scale(1.2)';
-            }, 10);
-            setTimeout(() => {
-                elem.remove();
-            }, 1000);
+            setTimeout(() => { elem.style.opacity = '1'; elem.style.transform = 'translateY(-50px) scale(1.2)'; }, 10);
+            setTimeout(() => elem.remove(), 1000);
         }
 
-        // Отрисовка шахты
-        function drawMine(now) {
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        function drawMine() {
+            ctx.fillStyle = '#111'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 50, canvas.height); ctx.fillRect(canvas.width - 50, 0, 50, canvas.height);
 
-            // Стены шахты
-            ctx.fillStyle = '#333';
-            ctx.fillRect(0, 0, 50, canvasHeight);
-            ctx.fillRect(canvasWidth - 50, 0, 50, canvasHeight);
-
-            // Земля/руда
             const blockHeight = 30;
-            const blocks = Math.floor(canvasHeight / blockHeight);
+            const blocks = Math.ceil(canvas.height / blockHeight);
             for (let i = 0; i < blocks; i++) {
-                const depthHere = Math.floor(game.depth - blocks + i + 1);
+                const depthHere = game.depth - blocks + i + 1;
                 ctx.fillStyle = depthHere > 0 ? '#8B4513' : '#654321';
-                ctx.fillRect(50, i * blockHeight, canvasWidth - 100, blockHeight);
-
-                // Редкая руда мигает
+                ctx.fillRect(50, i * blockHeight, canvas.width - 100, blockHeight);
                 if (Math.random() < 0.1 && depthHere > 10) {
                     ctx.fillStyle = '#FFD700';
-                    ctx.fillRect(60 + Math.random() * (canvasWidth - 140), i * blockHeight + 5, 20, 20);
+                    ctx.fillRect(60 + Math.random() * (canvas.width - 140), i * blockHeight + 5, 20, 20);
                 }
             }
 
-            // Шахтёр внизу
-            ctx.fillStyle = '#FFDBAC';
-            ctx.beginPath();
-            ctx.arc(canvasWidth / 2, canvasHeight - 40, 20, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#000';
-            ctx.fillRect(canvasWidth / 2 - 5, canvasHeight - 50, 10, 20); // тело
-            ctx.fillStyle = '#FFD700';
-            ctx.fillRect(canvasWidth / 2 - 15, canvasHeight - 45, 30, 10); // кирпич
+            // Шахтёр
+            ctx.fillStyle = '#FFDBAC'; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height - 40, 20, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fillRect(canvas.width / 2 - 5, canvas.height - 50, 10, 20);
+            ctx.fillStyle = '#FFD700'; ctx.fillRect(canvas.width / 2 - 15, canvas.height - 45, 30, 10);
 
-            // Глубина текст
-            ctx.fillStyle = '#FFF';
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Глубина: ${game.depth}м`, canvasWidth / 2, 40);
+            ctx.fillStyle = '#FFF'; ctx.font = '24px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(`Глубина: ${formatDepth(game.depth)}`, canvas.width / 2, 40);
         }
 
-        // Клик копать
         function dig() {
             const ore = getOre();
             const amount = game.pickaxePower * (1 + Math.floor(game.depth / 10));
             game.coins += ore.value * amount;
-            showOre(canvasWidth / 2 - 20, canvasHeight - 100, ore);
-            showMessage(`+${ore.value * amount} 💰`);
+            showOre(canvas.width / 2 - 20, canvas.height - 100, ore);
+            showMessage(`+${formatNumber(ore.value * amount)} 💰`);
             updateUI();
         }
 
-        // Авто-добыча
         function autoDig(dt) {
             const autoEarn = game.autoMiners * game.autoPower * dt * (1 + game.depth / 100);
             game.coins += Math.floor(autoEarn);
         }
 
-        // Показать сообщение
         function showMessage(text) {
             const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.style.opacity = '1';
-            setTimeout(() => { msg.style.opacity = '0'; }, 1000);
+            msg.textContent = text; msg.style.opacity = '1';
+            setTimeout(() => msg.style.opacity = '0', 1000);
         }
 
-        // Обновить UI
         function updateUI() {
-            document.getElementById('coins').textContent = Math.floor(game.coins).toLocaleString();
-            document.getElementById('depth').textContent = game.depth + 'м';
+            document.getElementById('coins').textContent = formatNumber(game.coins);
+            document.getElementById('depth').textContent = formatDepth(game.depth);
             document.getElementById('speed').textContent = (game.pickaxePower + game.autoMiners * game.autoPower).toFixed(1) + '/с';
 
-            // Апгрейды
-            const upgrades = document.querySelectorAll('.upgrade');
-            upgrades.forEach(up => {
+            document.querySelectorAll('.upgrade').forEach(up => {
                 const type = up.dataset.type;
                 let price = 0;
                 if (type === 'pickaxe') price = 50 * Math.pow(1.5, game.pickaxePower);
                 else if (type === 'auto') price = 200 * Math.pow(2, game.autoMiners);
                 else if (type === 'depth') price = 1000 * Math.pow(1.3, Math.floor(game.depth / 10));
-                up.querySelector('.price').textContent = Math.floor(price).toLocaleString() + '💰';
-
-                if (game.coins >= price) {
-                    up.classList.add('afford');
-                } else {
-                    up.classList.remove('afford');
-                }
+                up.querySelector('.price').textContent = formatNumber(Math.floor(price)) + '💰';
+                if (game.coins >= price) up.classList.add('afford');
+                else up.classList.remove('afford');
             });
         }
 
-        // Клик по апгрейду
         document.querySelectorAll('.upgrade').forEach(up => {
             up.addEventListener('click', () => {
                 const type = up.dataset.type;
                 let price = 0;
                 if (type === 'pickaxe') {
                     price = 50 * Math.pow(1.5, game.pickaxePower);
-                    if (game.coins >= price) {
-                        game.coins -= price;
-                        game.pickaxePower++;
-                        showMessage('🛠️ Кирпич улучшен!');
-                    }
+                    if (game.coins >= price) { game.coins -= price; game.pickaxePower++; showMessage('🛠️ Кирпич улучшен!'); }
                 } else if (type === 'auto') {
                     price = 200 * Math.pow(2, game.autoMiners);
-                    if (game.coins >= price) {
-                        game.coins -= price;
-                        game.autoMiners++;
-                        game.autoPower += 0.5;
-                        showMessage('🤖 Авто-копатель!');
-                    }
+                    if (game.coins >= price) { game.coins -= price; game.autoMiners++; game.autoPower += 0.5; showMessage('🤖 Авто-копатель!'); }
                 } else if (type === 'depth') {
                     price = 1000 * Math.pow(1.3, Math.floor(game.depth / 10));
-                    if (game.coins >= price) {
-                        game.coins -= price;
-                        game.depth += 10;
-                        showMessage('⬇️ Спустился глубже!');
-                    }
+                    if (game.coins >= price) { game.coins -= price; game.depth += 10; showMessage('⬇️ Спустился глубже!'); }
                 }
                 updateUI();
             });
         });
 
-        // Game loop
         function gameLoop(now) {
-            const dt = (now - game.lastTime) / 1000;
+            const dt = (now - game.lastTime) / 1000 || 0;
             game.lastTime = now;
-
             autoDig(dt);
-            game.depth += dt * 0.1; // Медленный спуск
+            game.depth += dt * 0.1;
             game.saveInterval += dt;
-            if (game.saveInterval > 10) {
-                saveGame();
-                game.saveInterval = 0;
-            }
-
-            drawMine(now);
+            if (game.saveInterval > 10) { saveGame(); game.saveInterval = 0; }
+            drawMine();
             updateUI();
-
             requestAnimationFrame(gameLoop);
         }
 
-        // Events
         document.getElementById('digBtn').addEventListener('click', dig);
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            if (x > 50 && x < canvasWidth - 50) dig();
+            if (x > 50 && x < canvas.width - 50) dig();
         });
 
-        // Start
         loadGame().then(() => {
             updateUI();
             game.lastTime = performance.now();
