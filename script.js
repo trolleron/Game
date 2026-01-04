@@ -4,7 +4,9 @@ const ctx = canvas.getContext('2d');
 
 let state = {
     hp: 100, maxHp: 100, atk: 10, def: 5, gold: 0, lvl: 1, xp: 0, room: 1,
-    weaponLvl: 0, armorLvl: 0
+    weaponLvl: 0, armorLvl: 0,
+    critChance: 0.20, // Шанс критического удара (20%)
+    critMultiplier: 2 // Множитель критического урона (x2)
 };
 
 let enemy = { name: "Гоблин", hp: 30, maxHp: 30, color: "#4ade80", type: "slime" };
@@ -24,7 +26,7 @@ function resize() {
     canvas.height = canvas.offsetHeight;
 }
 
-// РИСОВАНИЕ МОНСТРА С ТЕЛОМ
+// РИСОВАНИЕ МОНСТРА С ТЕЛОМ (без изменений, из предыдущего ответа)
 function drawEnemy(x, y) {
     const time = Date.now() / 300;
     const bounce = Math.sin(time) * 5;
@@ -84,6 +86,7 @@ function drawEnemy(x, y) {
     ctx.fillText(enemy.name, x, y - 105);
 }
 
+
 function attack() {
     if (state.hp <= 0) return;
 
@@ -92,9 +95,18 @@ function attack() {
     setTimeout(() => document.getElementById('gameCanvas').classList.remove('shake'), 300);
 
     // Урон врагу
-    const pDmg = state.atk + (state.weaponLvl * 5);
+    let pDmg = state.atk + (state.weaponLvl * 5);
+    let isCrit = false;
+
+    // Проверка на критический удар
+    if (Math.random() < state.critChance) {
+        pDmg = Math.floor(pDmg * state.critMultiplier);
+        isCrit = true;
+        showToast('CRIT!', 'crit'); // Показываем "CRIT!"
+    }
+
     enemy.hp -= pDmg;
-    showToast(`-${pDmg} HP`);
+    showToast(`-${pDmg} HP`); // Показываем урон
 
     if (enemy.hp <= 0) {
         winBattle();
@@ -166,13 +178,14 @@ function updateUI() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Рисуем монстра в центре
     drawEnemy(canvas.width / 2, canvas.height / 2 - 20);
 }
 
-function showToast(txt) {
+// showToast теперь принимает необязательный аргумент `type`
+function showToast(txt, type = 'normal') {
     const t = document.createElement('div');
-    t.className = 'toast'; t.textContent = txt;
+    t.className = `toast ${type}`; // Добавляем класс для типа
+    t.textContent = txt;
     document.getElementById('toast-container').appendChild(t);
     setTimeout(() => t.remove(), 1000);
 }

@@ -4,6 +4,7 @@
     --accent: #00d4ff;
     --red: #ff4757;
     --gold: #ffa502;
+    --crit: #ffeb3b; /* Новый цвет для крита */
 }
 
 body, html { 
@@ -14,7 +15,6 @@ body, html {
 
 #game-container { position: relative; display: flex; flex-direction: column; height: 100vh; }
 
-/* Анимация тряски экрана */
 .shake { animation: shakeAnim 0.3s linear; }
 @keyframes shakeAnim {
     0% { transform: translate(0,0); }
@@ -50,5 +50,21 @@ body, html {
 .main-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #8e0000; }
 .sec-btn, .shop-btn { flex: 1; background: #2f3542; border: 1px solid #444; border-radius: 10px; color: white; font-size: 12px; }
 #toast-container { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); pointer-events: none; }
-.toast { background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 15px; color: var(--gold); margin: 5px; animation: up 1s forwards; }
+.toast { 
+    background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 15px; 
+    color: var(--gold); margin: 5px; animation: up 1s forwards; 
+    font-weight: bold; /* Общее для всех тостов */
+}
+.toast.crit { /* Специальные стили для критического удара */
+    color: var(--crit); 
+    background: rgba(50, 50, 0, 0.9); /* Темный фон для контраста */
+    border: 1px solid var(--crit);
+    font-size: 1.1em; /* Чуть крупнее */
+    animation: upCrit 1.2s forwards; /* Отдельная анимация */
+}
 @keyframes up { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
+@keyframes upCrit { /* Более выразительная анимация для крита */
+    0% { opacity: 1; transform: translate(0,0) scale(1); }
+    20% { opacity: 1; transform: translate(0,-10px) scale(1.1); }
+    100% { opacity: 0; transform: translate(0,-60px) scale(0.8); }
+}
