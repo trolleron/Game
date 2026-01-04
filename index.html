@@ -9,7 +9,7 @@
 </head>
 <body>
     <div id="game">
-        <canvas id="canvas" width="400" height="300"></canvas>
+        <canvas id="canvas"></canvas>
         <div id="ui">
             <div class="stat">
                 <span>❤️ HP:</span><span id="hp">100/100</span>
@@ -22,14 +22,13 @@
                 <span>📍 Комната:</span><span id="room">1/10</span>
             </div>
             <div id="battle">
-                <div id="enemy-hp">---</div>
-                <button id="fightBtn">⚔️ БОЙ!</button>
+                <button id="fightBtn">⚔️ Новый бой</button>
                 <button id="healBtn">💊 Зелье (50g)</button>
             </div>
             <div id="shop">
                 <div class="upgrade" data-type="weapon">Меч +5 ATK (200g)</div>
                 <div class="upgrade" data-type="armor">Броня +5 DEF (300g)</div>
-                <div class="upgrade" data-type="prestige">Престиж x2 (5000g)</div>
+                <div class="upgrade" data-type="prestige">Престиж x1.5 (5000g)</div>
             </div>
         </div>
         <div id="message"></div>
