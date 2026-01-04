@@ -9,7 +9,8 @@ let game = {
     autoMiners: 0,
     autoPower: 1,
     lastTime: 0,
-    saveInterval: 0
+    saveInterval: 0,
+    digTime: 0  // для анимации копания
 };
 
 const ores = [
@@ -30,7 +31,7 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Красивое форматирование монет
+// Форматирование монет
 function formatNumber(num) {
     if (num < 1000) return Math.floor(num).toLocaleString();
     const units = ['', 'k', 'M', 'B', 'T'];
@@ -42,7 +43,7 @@ function formatNumber(num) {
     return num.toFixed(2).replace(/\.00$/, '') + units[i];
 }
 
-// Красивое форматирование глубины
+// Форматирование глубины
 function formatDepth(meters) {
     if (meters < 1000) return Math.floor(meters) + ' м';
     const units = ['км', 'Мм', 'Гм', 'Тм'];
@@ -55,26 +56,20 @@ function formatDepth(meters) {
     return val.toFixed(2).replace(/\.00$/, '') + ' ' + units[i];
 }
 
-// Загрузка сохранения
+// Загрузка/сохранение
 async function loadGame() {
     try {
         const data = await tg.CloudStorage.getItems(['gameSave']);
-        if (data['gameSave']) {
-            Object.assign(game, JSON.parse(data['gameSave']));
-        }
+        if (data['gameSave']) Object.assign(game, JSON.parse(data['gameSave']));
     } catch (e) {
         const local = localStorage.getItem('minerSave');
         if (local) Object.assign(game, JSON.parse(local));
     }
 }
 
-// Сохранение
 async function saveGame() {
-    try {
-        await tg.CloudStorage.setItem('gameSave', JSON.stringify(game));
-    } catch (e) {
-        localStorage.setItem('minerSave', JSON.stringify(game));
-    }
+    try { await tg.CloudStorage.setItem('gameSave', JSON.stringify(game)); }
+    catch (e) { localStorage.setItem('minerSave', JSON.stringify(game)); }
 }
 
 function getOre() {
@@ -103,52 +98,97 @@ function showOre(x, y, ore) {
     setTimeout(() => elem.remove(), 1000);
 }
 
+function showMessage(text) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.style.opacity = '1';
+    setTimeout(() => msg.style.opacity = '0', 1000);
+}
+
 function drawMine() {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Стены шахты
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, 50, canvas.height);
-    ctx.fillRect(canvas.width - 50, 0, 50, canvas.height);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, 60, canvas.height);
+    ctx.fillRect(canvas.width - 60, 0, 60, canvas.height);
 
-    // Земля и руда
+    // Земля (без золотых пикселей)
     const blockHeight = 30;
     const blocks = Math.ceil(canvas.height / blockHeight);
     for (let i = 0; i < blocks; i++) {
         const depthHere = game.depth - blocks + i + 1;
         ctx.fillStyle = depthHere > 0 ? '#8B4513' : '#654321';
-        ctx.fillRect(50, i * blockHeight, canvas.width - 100, blockHeight);
-
-        // Золотые пиксели (редкая руда)
-    //if (Math.random() < 0.1 && depthHere > 10) {
-            //ctx.fillStyle = '#FFD700';
-            //ctx.fillRect(60 + Math.random() * (canvas.width - 140), i * blockHeight + 5, 20, 20);
-        //}
+        ctx.fillRect(60, i * blockHeight, canvas.width - 120, blockHeight);
     }
 
-    // Шахтёр
+    // Шахтёр с анимацией
+    const minerX = canvas.width / 2;
+    const minerY = canvas.height - 120;
+    const swing = Math.sin(Date.now() / 300) * 3; // лёгкое дыхание
+    const digAnim = game.digTime ? Math.max(0, 300 - (Date.now() - game.digTime)) / 10 : 0; // подъём кирки
+
+    // Шлем
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(minerX - 25 + swing, minerY - 70, 50, 25);
+    // Лампа
+    ctx.fillStyle = '#FFAA00';
+    ctx.beginPath();
+    ctx.arc(minerX + 15 + swing, minerY - 60, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Мерцание лампы
+    ctx.fillStyle = Math.sin(Date.now() / 400) > 0 ? '#FFFFAA' : '#FFCC00';
+    ctx.beginPath();
+    ctx.arc(minerX + 15 + swing, minerY - 60, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Голова
     ctx.fillStyle = '#FFDBAC';
     ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height - 40, 20, 0, Math.PI * 2);
+    ctx.arc(minerX + swing, minerY - 40, 20, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.fillRect(canvas.width / 2 - 5, canvas.height - 50, 10, 20);
-    ctx.fillStyle = '#FFD700';
-    ctx.fillRect(canvas.width / 2 - 15, canvas.height - 45, 30, 10);
+    // Борода
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(minerX - 12 + swing, minerY - 25, 24, 15);
 
-    // Текст глубины на canvas
+    // Тело (куртка)
+    ctx.fillStyle = '#4682B4';
+    ctx.fillRect(minerX - 22 + swing, minerY - 15, 44, 50);
+
+    // Руки
+    ctx.fillStyle = '#FFDBAC';
+    ctx.fillRect(minerX - 30 + swing, minerY - 5, 15, 30); // левая
+    ctx.fillRect(minerX + 15 + swing, minerY - 5 + digAnim, 20, 30); // правая (поднимается)
+
+    // Кирка
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(minerX + 30 + swing, minerY + 15 + digAnim, 40, 12);
+    ctx.fillStyle = '#C0C0C0';
+    ctx.fillRect(minerX + 35 + swing, minerY + 10 + digAnim, 35, 18);
+
+    // Ноги
+    ctx.fillStyle = '#333';
+    ctx.fillRect(minerX - 15 + swing, minerY + 35, 12, 40);
+    ctx.fillRect(minerX + 3 + swing, minerY + 35, 12, 40);
+    // Ботинки
+    ctx.fillStyle = '#000';
+    ctx.fillRect(minerX - 18 + swing, minerY + 70, 18, 12);
+    ctx.fillRect(minerX + swing, minerY + 70, 18, 12);
+
+    // Текст глубины
     ctx.fillStyle = '#FFF';
-    ctx.font = '24px Arial';
+    ctx.font = 'bold 26px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(`Глубина: ${formatDepth(game.depth)}`, canvas.width / 2, 40);
+    ctx.fillText(`Глубина: ${formatDepth(game.depth)}`, canvas.width / 2, 50);
 }
 
 function dig() {
     const ore = getOre();
     const amount = game.pickaxePower * (1 + Math.floor(game.depth / 10));
     game.coins += ore.value * amount;
-    showOre(canvas.width / 2 - 20, canvas.height - 100, ore);
+    game.digTime = Date.now(); // запуск анимации копания
+    showOre(canvas.width / 2 - 20, canvas.height - 150, ore);
     showMessage(`+${formatNumber(ore.value * amount)} 💰`);
     updateUI();
 }
@@ -156,13 +196,6 @@ function dig() {
 function autoDig(dt) {
     const autoEarn = game.autoMiners * game.autoPower * dt * (1 + game.depth / 100);
     game.coins += Math.floor(autoEarn);
-}
-
-function showMessage(text) {
-    const msg = document.getElementById('message');
-    msg.textContent = text;
-    msg.style.opacity = '1';
-    setTimeout(() => { msg.style.opacity = '0'; }, 1000);
 }
 
 function updateUI() {
@@ -178,42 +211,25 @@ function updateUI() {
         else if (type === 'depth') price = 1000 * Math.pow(1.3, Math.floor(game.depth / 10));
 
         up.querySelector('.price').textContent = formatNumber(Math.floor(price)) + '💰';
-
-        if (game.coins >= price) {
-            up.classList.add('afford');
-        } else {
-            up.classList.remove('afford');
-        }
+        if (game.coins >= price) up.classList.add('afford');
+        else up.classList.remove('afford');
     });
 }
 
-// Клик по апгрейдам
+// Апгрейды
 document.querySelectorAll('.upgrade').forEach(up => {
     up.addEventListener('click', () => {
         const type = up.dataset.type;
         let price = 0;
         if (type === 'pickaxe') {
             price = 50 * Math.pow(1.5, game.pickaxePower);
-            if (game.coins >= price) {
-                game.coins -= price;
-                game.pickaxePower++;
-                showMessage('🛠️ Кирпич улучшен!');
-            }
+            if (game.coins >= price) { game.coins -= price; game.pickaxePower++; showMessage('🛠️ Кирка улучшена!'); }
         } else if (type === 'auto') {
             price = 200 * Math.pow(2, game.autoMiners);
-            if (game.coins >= price) {
-                game.coins -= price;
-                game.autoMiners++;
-                game.autoPower += 0.5;
-                showMessage('🤖 Авто-копатель куплен!');
-            }
+            if (game.coins >= price) { game.coins -= price; game.autoMiners++; game.autoPower += 0.5; showMessage('🤖 Авто-копатель куплен!'); }
         } else if (type === 'depth') {
             price = 1000 * Math.pow(1.3, Math.floor(game.depth / 10));
-            if (game.coins >= price) {
-                game.coins -= price;
-                game.depth += 10;
-                showMessage('⬇️ Спустился глубже!');
-            }
+            if (game.coins >= price) { game.coins -= price; game.depth += 10; showMessage('⬇️ Спустился глубже!'); }
         }
         updateUI();
     });
@@ -226,7 +242,7 @@ function gameLoop(now) {
     game.lastTime = now;
 
     autoDig(dt);
-    game.depth += dt * 0.1; // медленный автоматический спуск
+    game.depth += dt * 0.1;
 
     game.saveInterval += dt;
     if (game.saveInterval > 10) {
@@ -240,15 +256,15 @@ function gameLoop(now) {
     requestAnimationFrame(gameLoop);
 }
 
-// События кликов
+// Клик по кнопке и по земле
 document.getElementById('digBtn').addEventListener('click', dig);
 canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    if (x > 50 && x < canvas.width - 50) dig();
+    if (x > 60 && x < canvas.width - 60) dig();
 });
 
-// Запуск
+// Старт
 loadGame().then(() => {
     updateUI();
     requestAnimationFrame(gameLoop);
