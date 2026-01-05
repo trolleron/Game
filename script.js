@@ -12,8 +12,8 @@ const SPRITES = {
     player: 'https://img.itch.zone/aW1nLzExNDI1OTI5LnBuZw==/original/m966Ph.png', // Рыцарь
     monster: {
         goblin: 'img/goblin.png', // Гоблин
-        skeleton: 'img/skeleton.png', // Скелет
-        demon: 'img/boss.png' // Демон
+        viking: 'img/viking.png', // Викинг
+        boss: 'img/boss.png' // Босс
     }
 };
 
@@ -63,9 +63,9 @@ function init() {
 function spawnEnemy() {
     let type = 'goblin';
     if (state.room % 10 === 0) type = 'boss';
-    else if (state.room % 3 === 0) type = 'skeleton';
+    else if (state.room % 3 === 0) type = 'viking';
 
-    const names = { goblin: 'Гоблин', skeleton: 'Скелет', boss: 'ВЛАДЫКА' };
+    const names = { goblin: 'Гоблин', viking: 'Викинг', boss: 'Босс' };
     
     enemy = { 
         name: names[type],
