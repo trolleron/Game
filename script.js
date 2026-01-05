@@ -12,6 +12,7 @@ const SPRITES = {
     player: 'https://img.itch.zone/aW1nLzExNDI1OTI5LnBuZw==/original/m966Ph.png', // Рыцарь
     monster: {
         goblin: 'img/goblin.png', // Гоблин
+        skeleton: 'img/skeleton.png', // Скелет
         demon: 'img/boss.png' // Демон
     }
 };
