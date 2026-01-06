@@ -25,46 +25,83 @@ body {
     background-size: cover;
 }
 
-/* ГЕОМЕТРИЧЕСКАЯ ТЕНЬ */
-.monster-shadow {
+/* Оболочка для гоблина и тени */
+.sprite-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+/* ТЕНЬ ПОД ГОБЛИНОМ */
+.sprite-wrapper::after {
+    content: '';
     position: absolute;
-    bottom: 50px; /* Регулируй, чтобы была точно под ногами */
-    width: 120px;
+    bottom: -5px; 
+    width: 140px;
     height: 25px;
-    background: rgba(0, 0, 0, 0.6); /* Черный овал с прозрачностью */
+    background: rgba(0, 0, 0, 0.6);
     border-radius: 50%;
-    filter: blur(8px); /* Размытие краев */
+    filter: blur(8px);
     z-index: 1;
 }
 
 #enemy-sprite {
     height: 250px;
     width: auto;
-    z-index: 2; /* Поверх тени */
+    z-index: 2;
     position: relative;
-    transform: translateZ(0);
 }
 
-/* Панели и кнопки */
+/* HP Монстра (Сверху) */
 .hp-container {
     position: absolute; top: 30px; text-align: center;
     background: rgba(0, 0, 0, 0.6); padding: 10px 20px;
     border-radius: 12px; backdrop-filter: blur(5px);
 }
 
-.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
-#enemy-hp-fill { background: var(--hp-monster); width: 100%; }
-#player-hp-fill { background: var(--hp-player); width: 100%; }
+.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin: 5px auto 0; }
+#enemy-hp-fill { background: var(--hp-monster); width: 100%; height: 100%; }
 
-.player-panel { background: var(--panel-color); padding: 20px; border-radius: 25px 25px 0 0; }
-.player-info { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
-.hp-fill { height: 100%; transition: width 0.3s ease-out; }
+/* ПАНЕЛЬ ИГРОКА (Исправленная полоска) */
+.player-panel {
+    background: var(--panel-color);
+    padding: 20px 30px;
+    border-radius: 25px 25px 0 0;
+    box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
+}
+
+.player-info { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 8px; 
+    font-size: 0.9rem;
+    font-weight: bold; 
+}
+
+.player-hp-container { 
+    width: 100%; 
+    height: 12px; 
+    background: #1a1a1a;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+#player-hp-fill { 
+    background: var(--hp-player); 
+    width: 100%; 
+    height: 100%;
+    transition: width 0.3s ease-out; 
+}
 
 .btn-attack {
-    width: 100%; padding: 20px; font-size: 1.4rem; font-weight: bold;
+    width: 100%; padding: 18px; font-size: 1.4rem; font-weight: bold;
     color: white; border: none; border-radius: 15px;
     background: linear-gradient(135deg, #ff4757, #ff6b81);
     box-shadow: 0 5px 0 #8d1d1d;
+    cursor: pointer;
 }
+
 .btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }
 .btn-attack:disabled { background: #333; box-shadow: none; opacity: 0.5; }

@@ -11,7 +11,6 @@ const monster = {
     isDead: false
 };
 
-// Твои настройки: 6 кадров атаки
 const framesConfig = { idle: 4, attack: 6, death: 3 };
 const cachedImages = {};
 const version = Date.now(); 
@@ -44,10 +43,9 @@ function animate() {
         spriteImg.src = cachedImages[currentKey].src;
     }
 
-    // ЛОГИКА НАНЕСЕНИЯ УРОНА ВНУТРИ АНИМАЦИИ
-    // Если сейчас идет атака и мы на 4-м кадре (пик замаха)
+    // НАНЕСЕНИЕ УРОНА ИГРОКУ (на 4-м кадре атаки)
     if (monster.action === 'attack' && monster.frame === 4) {
-        applyDamageToPlayer(); 
+        applyDamageToPlayer();
     }
 
     monster.frame++;
@@ -56,15 +54,14 @@ function animate() {
         if (monster.action === 'idle') {
             monster.frame = 1;
         } else if (monster.action === 'attack') {
-            // Урон уже нанесен на 4-м кадре, просто возвращаемся в idle
             changeAction('idle');
+            if (player.hp > 0) attackBtn.disabled = false;
         } else if (monster.action === 'death') {
             monster.frame = framesConfig.death;
         }
     }
 }
 
-// Твоя скорость: 100 мс
 let animInterval = setInterval(animate, 100);
 
 function changeAction(newAct) {
@@ -79,7 +76,7 @@ function playerAttack() {
     monster.hp -= 25;
     attackBtn.disabled = true;
 
-    spriteImg.style.filter = 'brightness(3)';
+    spriteImg.style.filter = 'brightness(2.5)';
     setTimeout(() => spriteImg.style.filter = 'none', 100);
 
     if (monster.hp <= 0) {
@@ -88,7 +85,6 @@ function playerAttack() {
         changeAction('death');
         attackBtn.style.display = 'none';
     } else {
-        // Гоблин начинает замах через 400мс после твоего удара
         setTimeout(() => {
             if (!monster.isDead) changeAction('attack');
         }, 400);
@@ -98,40 +94,26 @@ function playerAttack() {
 
 function applyDamageToPlayer() {
     if (monster.isDead) return;
-
     player.hp -= monster.atk;
+    if (player.hp < 0) player.hp = 0;
     
-    // Эффект тряски экрана (добавим для сочности)
-    document.getElementById('game-container').style.transform = 'translateX(5px)';
-    document.body.style.backgroundColor = '#4d1a1a';
-    
-    setTimeout(() => {
-        document.getElementById('game-container').style.transform = 'translateX(0)';
-        document.body.style.backgroundColor = '#12121a';
-        // Кнопка становится активной только после того, как гоблин закончил атаку
-    }, 100);
-
-    if (player.hp <= 0) {
-        player.hp = 0;
-        updateUI();
-        setTimeout(() => { alert("Поражение!"); location.reload(); }, 200);
-    }
     updateUI();
+
+    if (player.hp === 0) {
+        setTimeout(() => { 
+            alert("Вы пали в бою!"); 
+            location.reload(); 
+        }, 300);
+    }
 }
 
-// Кнопка снова активна, когда гоблин вернулся в idle
 function updateUI() {
     monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
     playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
     hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
-    
-    if (!monster.isDead && monster.action === 'idle' && player.hp > 0) {
-        attackBtn.disabled = false;
-    }
 }
 
 preloadImages();
 attackBtn.onclick = playerAttack;
-tg.ready();
 tg.expand();
 updateUI();
