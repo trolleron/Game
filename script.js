@@ -1,38 +1,46 @@
 const tg = window.Telegram.WebApp;
 
-// Состояние игрока
-const player = {
-    hp: 100,
-    maxHp: 100
-};
-
-// Состояние монстра
+// 1. Настройки персонажей
+const player = { hp: 100, maxHp: 100 };
 const monster = {
     type: 'goblin',
     action: 'idle',
     frame: 1,
     hp: 100,
     maxHp: 100,
-    isDead: false,
-    atkPower: 10 // Урон, который наносит гоблин
+    atk: 15,
+    isDead: false
 };
 
-// Твои настройки кадров
-const framesConfig = {
-    idle: 4,
-    attack: 6,
-    death: 3
-};
+// 2. Конфигурация кадров (твои данные)
+const framesConfig = { idle: 4, attack: 6, death: 3 };
 
+// 3. Предзагрузка (Preload) - убирает фризы
+const cachedImages = {};
+
+function preloadImages() {
+    for (const action in framesConfig) {
+        for (let i = 1; i <= framesConfig[action]; i++) {
+            const imgPath = `img/${monster.type}/${action}_${i}.png`;
+            const img = new Image();
+            img.src = imgPath;
+            cachedImages[imgPath] = img; // Сохраняем в памяти
+        }
+    }
+}
+
+// Элементы DOM
 const spriteImg = document.getElementById('enemy-sprite');
-const playerHpFill = document.getElementById('hp-bar'); // Убедись, что такой ID есть в HTML
 const monsterHpFill = document.getElementById('enemy-hp-fill');
+const playerHpFill = document.getElementById('player-hp-fill');
 const hpText = document.getElementById('hp-text');
+const attackBtn = document.getElementById('btn-attack');
 
-// --- ЦИКЛ АНИМАЦИИ ---
+// 4. Главный цикл анимации
 function animate() {
+    // Если монстр умер и анимация смерти закончилась - стоп
     if (monster.isDead && monster.action === 'death' && monster.frame === framesConfig.death) {
-        return; 
+        return;
     }
 
     const path = `img/${monster.type}/${monster.action}_${monster.frame}.png`;
@@ -44,8 +52,7 @@ function animate() {
         if (monster.action === 'idle') {
             monster.frame = 1;
         } else if (monster.action === 'attack') {
-            // КОГДА ЗАКОНЧИЛАСЬ АНИМАЦИЯ АТАКИ -> Гоблин бьет игрока
-            applyDamageToPlayer(); 
+            applyDamageToPlayer();
             changeAction('idle');
         } else if (monster.action === 'death') {
             monster.frame = framesConfig.death;
@@ -53,24 +60,25 @@ function animate() {
     }
 }
 
-let animTimer = setInterval(animate, 150);
+// Интервал анимации (120мс для большей плавности)
+let animInterval = setInterval(animate, 120);
 
-function changeAction(newAction) {
+function changeAction(newAct) {
     if (monster.isDead) return;
-    monster.action = newAction;
+    monster.action = newAct;
     monster.frame = 1;
 }
 
-// --- ЛОГИКА БОЯ ---
-
-// 1. Игрок бьет Гоблина
+// 5. Логика битвы
 function playerAttack() {
     if (monster.isDead || player.hp <= 0) return;
 
+    // Урон по монстру
     monster.hp -= 20;
-    
-    // Эффект удара по гоблину
-    spriteImg.style.filter = 'brightness(2) sepia(1)';
+    attackBtn.disabled = true;
+
+    // Визуальный отклик (вспышка)
+    spriteImg.style.filter = 'brightness(3)';
     setTimeout(() => spriteImg.style.filter = 'none', 100);
 
     if (monster.hp <= 0) {
@@ -78,51 +86,43 @@ function playerAttack() {
         monster.isDead = true;
         changeAction('death');
     } else {
-        // Гоблин злится и готовит атаку через 600мс
-        setTimeout(() => {
-            changeAction('attack');
-        }, 600);
+        // Ответка гоблина
+        setTimeout(() => changeAction('attack'), 500);
     }
     updateUI();
 }
 
-// 2. Гоблин бьет Игрока
 function applyDamageToPlayer() {
     if (monster.isDead) return;
 
-    player.hp -= monster.atkPower;
+    player.hp -= monster.atk;
     
-    // Эффект тряски экрана или вспышки при получении урона
-    document.body.style.backgroundColor = '#441111';
-    setTimeout(() => document.body.style.backgroundColor = '#12121a', 100);
+    // Эффект получения урона (экран краснеет)
+    document.body.style.backgroundColor = '#4d1a1a';
+    setTimeout(() => {
+        document.body.style.backgroundColor = '#12121a';
+        if (!monster.isDead) attackBtn.disabled = false;
+    }, 150);
 
     if (player.hp <= 0) {
         player.hp = 0;
-        alert("Гоблин победил! Попробуй еще раз.");
-        location.reload(); // Перезагрузка игры
+        updateUI();
+        setTimeout(() => {
+            alert("Вы погибли в бою!");
+            location.reload();
+        }, 200);
     }
     updateUI();
 }
 
 function updateUI() {
-    // Обновляем полоску HP гоблина
-    monsterHpFill.style.width = `${(monster.hp / monster.maxHp) * 100}%`;
-    
-    // Обновляем полоску HP игрока
-    if (playerHpFill) {
-        playerHpFill.style.width = `${(player.hp / player.maxHp) * 100}%`;
-    }
-    // Обновляем текст HP (если есть элемент с id="hp-text")
-    if (hpText) {
-        hpText.textContent = `${player.hp}/${player.maxHp}`;
-    }
+    monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
+    playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
+    hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
 }
 
-function init() {
-    tg.ready();
-    tg.expand();
-    document.getElementById('btn-attack').onclick = playerAttack;
-    updateUI();
-}
-
-init();
+// Старт
+preloadImages();
+attackBtn.onclick = playerAttack;
+tg.expand();
+updateUI();
