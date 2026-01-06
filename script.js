@@ -1,62 +1,78 @@
 const tg = window.Telegram.WebApp;
 
-// Состояние игры
-let state = {
-    hp: 100,
-    maxHp: 100,
-    gold: 0,
-    room: 1
-};
-
-// Настройки Гоблина
+// Состояние монстра
 const monster = {
     type: 'goblin',
     action: 'idle',
     frame: 1,
-    maxFrames: 4, // Сколько у тебя картинок для idle? Поставь здесь это число
-    hp: 50,
-    maxHp: 50
+    hp: 100,
+    maxHp: 100,
+    isDead: false
 };
 
-// Элементы экрана
+// Конфигурация кадров (твои данные)
+const framesConfig = {
+    idle: 4,
+    attack: 6,
+    death: 3
+};
+
 const spriteImg = document.getElementById('enemy-sprite');
 const hpFill = document.getElementById('enemy-hp-fill');
-const goldText = document.getElementById('gold');
 
 // --- ГЛАВНЫЙ ЦИКЛ АНИМАЦИИ ---
 function animate() {
-    // Формируем путь. ВАЖНО: проверь регистр букв!
+    if (monster.isDead && monster.action === 'death' && monster.frame === framesConfig.death) {
+        return; // Останавливаемся на последнем кадре смерти
+    }
+
+    // Путь: img/goblin/idle_1.png и т.д.
     const path = `img/${monster.type}/${monster.action}_${monster.frame}.png`;
-    
-    // Пытаемся загрузить кадр
     spriteImg.src = path;
 
-    // Переходим к следующему кадру
     monster.frame++;
-    
-    // Если кадры кончились — начинаем сначала (для idle)
-    if (monster.frame > monster.maxFrames) {
-        monster.frame = 1;
+
+    // Проверка завершения анимации
+    if (monster.frame > framesConfig[monster.action]) {
+        if (monster.action === 'idle') {
+            monster.frame = 1; // Зацикливаем idle
+        } else if (monster.action === 'attack') {
+            changeAction('idle'); // После атаки возвращаемся в покой
+        } else if (monster.action === 'death') {
+            monster.frame = framesConfig.death; // Замираем в конце смерти
+        }
     }
 }
 
-// Запускаем аниматор (каждые 150 миллисекунд)
+// Запуск аниматора (150мс - хорошая скорость для спрайтов)
 let animTimer = setInterval(animate, 150);
 
-// --- ЛОГИКА БОЯ ---
-function attack() {
-    // Урон монстру
-    monster.hp -= 10;
+// Функция смены действия
+function changeAction(newAction) {
+    if (monster.isDead) return;
+    monster.action = newAction;
+    monster.frame = 1;
+}
+
+// Логика атаки игрока
+function playerAttack() {
+    if (monster.isDead) return;
+
+    monster.hp -= 25;
     
-    // Визуальный эффект удара (вспышка)
-    spriteImg.style.filter = 'brightness(2)';
+    // Эффект "удара" (кратковременная вспышка или тряска)
+    spriteImg.style.filter = 'brightness(2) sepia(1)';
     setTimeout(() => spriteImg.style.filter = 'none', 100);
 
-    // Проверка смерти
     if (monster.hp <= 0) {
-        monster.hp = monster.maxHp; // "Воскрешаем" для теста
-        state.gold += 10;
-        updateUI();
+        monster.hp = 0;
+        monster.isDead = true;
+        changeAction('death');
+    } else {
+        // Ответная атака гоблина через полсекунды
+        setTimeout(() => {
+            changeAction('attack');
+        }, 500);
     }
     
     updateUI();
@@ -64,25 +80,14 @@ function attack() {
 
 function updateUI() {
     hpFill.style.width = `${(monster.hp / monster.maxHp) * 100}%`;
-    goldText.textContent = state.gold;
 }
 
 // Инициализация
 function init() {
     tg.ready();
     tg.expand();
-    
-    const attackBtn = document.getElementById('btn-attack');
-    if(attackBtn) attackBtn.onclick = attack;
-    
+    document.getElementById('btn-attack').onclick = playerAttack;
     updateUI();
 }
-
-// Обработка ошибок загрузки картинок
-spriteImg.onerror = function() {
-    console.error("Не удалось найти файл: " + spriteImg.src);
-    // Если картинка не найдена, выведем текст вместо неё (для отладки)
-    spriteImg.alt = "Ошибка: проверь путь " + path;
-};
 
 init();
