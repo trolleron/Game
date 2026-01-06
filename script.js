@@ -1,5 +1,8 @@
 const tg = window.Telegram.WebApp;
 
+// Загружаем золото из памяти или ставим 0
+let gold = parseInt(localStorage.getItem('playerGold')) || 0;
+
 const player = { hp: 100, maxHp: 100 };
 const monster = {
     type: 'goblin',
@@ -8,13 +11,13 @@ const monster = {
     hp: 100,
     maxHp: 100,
     atk: 15,
+    reward: 10, // Награда за победу
     isDead: false
 };
 
 const framesConfig = { idle: 4, attack: 6, death: 3 };
 const cachedImages = {};
 
-// Предзагрузка изображений для плавной анимации
 function preloadImages() {
     for (const action in framesConfig) {
         for (let i = 1; i <= framesConfig[action]; i++) {
@@ -30,8 +33,9 @@ const spriteImg = document.getElementById('enemy-sprite');
 const monsterHpFill = document.getElementById('enemy-hp-fill');
 const playerHpFill = document.getElementById('player-hp-fill');
 const hpText = document.getElementById('hp-text');
+const goldText = document.getElementById('gold-count');
 const attackBtn = document.getElementById('btn-attack');
-const fires = document.querySelectorAll('.fire-glow'); // Для эффекта вспышки факелов
+const fires = document.querySelectorAll('.fire-glow');
 
 function animate() {
     if (monster.isDead && monster.action === 'death' && monster.frame >= framesConfig.death) {
@@ -44,7 +48,6 @@ function animate() {
         spriteImg.src = cachedImages[currentKey].src;
     }
 
-    // Наносим урон игроку на 4-м кадре атаки гоблина
     if (monster.action === 'attack' && monster.frame === 4) {
         applyDamageToPlayer();
     }
@@ -63,7 +66,6 @@ function animate() {
     }
 }
 
-// Запуск основного цикла анимации (10 кадров в секунду)
 setInterval(animate, 100);
 
 function changeAction(newAct) {
@@ -78,7 +80,6 @@ function playerAttack() {
     monster.hp -= 25;
     attackBtn.disabled = true;
 
-    // Эффект вспышки гоблина и усиление свечения факелов
     spriteImg.style.filter = 'brightness(2.5)';
     fires.forEach(f => f.style.transform = 'translate(-50%, -50%) scale(2)');
     
@@ -92,12 +93,26 @@ function playerAttack() {
         monster.isDead = true;
         changeAction('death');
         attackBtn.style.display = 'none';
+        
+        // ВЫПЛАТА НАГРАДЫ
+        addGold(monster.reward);
+        
     } else {
-        // Гоблин контратакует через небольшую паузу
         setTimeout(() => { 
             if (!monster.isDead) changeAction('attack'); 
         }, 400);
     }
+    updateUI();
+}
+
+function addGold(amount) {
+    gold += amount;
+    localStorage.setItem('playerGold', gold); // Сохраняем
+    
+    // Анимация цифр
+    goldText.classList.add('gold-anim');
+    setTimeout(() => goldText.classList.remove('gold-anim'), 500);
+    
     updateUI();
 }
 
@@ -107,31 +122,28 @@ function applyDamageToPlayer() {
     player.hp -= monster.atk;
     if (player.hp < 0) player.hp = 0;
 
-    // ГАРАНТИРОВАННАЯ ТРЯСКА ЭКРАНА
-    gameContainer.style.animation = 'none'; // Сбрасываем анимацию
-    void gameContainer.offsetWidth;         // Магия: заставляем браузер перерисовать элемент
-    gameContainer.style.animation = 'shake 0.2s ease-in-out'; // Запускаем тряску снова
+    gameContainer.style.animation = 'none';
+    void gameContainer.offsetWidth;         
+    gameContainer.style.animation = 'shake 0.2s ease-in-out'; 
     
     updateUI();
     
     if (player.hp === 0) {
         setTimeout(() => { 
-            alert("Вы пали в бою!"); 
+            alert("Вы проиграли! Золото сохранено."); 
             location.reload(); 
         }, 300);
     }
 }
 
 function updateUI() {
-    // Обновляем полоски здоровья
     monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
     playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
-    // Обновляем текст (формат как на скриншоте)
     hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
+    goldText.textContent = gold;
 }
 
-// Инициализация
 preloadImages();
 attackBtn.onclick = playerAttack;
-tg.expand(); // Раскрываем Telegram WebApp на весь экран
+tg.expand();
 updateUI();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin Battle</title>
+    <title>Goblin Battle RPG</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -15,7 +15,6 @@
             <div class="fire-glow"></div>
             <div class="fire-core"></div>
         </div>
-
         <div class="torch-fire right-fire">
             <div class="fire-glow"></div>
             <div class="fire-core"></div>
@@ -32,6 +31,13 @@
     </div>
 
     <div class="player-panel">
+        <div class="inventory-bar">
+            <div class="coin-display">
+                <span class="coin-icon">💰</span>
+                <span id="gold-count">0</span>
+            </div>
+        </div>
+
         <div class="player-info">
             <span>ВАШЕ ЗДОРОВЬЕ</span>
             <span id="hp-text">100 / 100 HP</span>
