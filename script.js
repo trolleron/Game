@@ -1,6 +1,5 @@
 const tg = window.Telegram.WebApp;
 
-// 1. Настройки персонажей
 const player = { hp: 100, maxHp: 100 };
 const monster = {
     type: 'goblin',
@@ -12,10 +11,7 @@ const monster = {
     isDead: false
 };
 
-// 2. Конфигурация кадров (твои данные)
 const framesConfig = { idle: 4, attack: 6, death: 3 };
-
-// 3. Предзагрузка (Preload) - убирает фризы
 const cachedImages = {};
 
 function preloadImages() {
@@ -24,22 +20,21 @@ function preloadImages() {
             const imgPath = `img/${monster.type}/${action}_${i}.png`;
             const img = new Image();
             img.src = imgPath;
-            cachedImages[imgPath] = img; // Сохраняем в памяти
+            cachedImages[imgPath] = img;
         }
     }
 }
 
-// Элементы DOM
 const spriteImg = document.getElementById('enemy-sprite');
 const monsterHpFill = document.getElementById('enemy-hp-fill');
 const playerHpFill = document.getElementById('player-hp-fill');
 const hpText = document.getElementById('hp-text');
 const attackBtn = document.getElementById('btn-attack');
 
-// 4. Главный цикл анимации
 function animate() {
-    // Если монстр умер и анимация смерти закончилась - стоп
-    if (monster.isDead && monster.action === 'death' && monster.frame === framesConfig.death) {
+    // ЛОГИКА СМЕРТИ: если кадры смерти закончились, останавливаемся
+    if (monster.isDead && monster.action === 'death' && monster.frame > framesConfig.death) {
+        monster.frame = framesConfig.death; // замираем на последнем кадре
         return;
     }
 
@@ -48,6 +43,7 @@ function animate() {
 
     monster.frame++;
 
+    // Проверка выхода за пределы кадров
     if (monster.frame > framesConfig[monster.action]) {
         if (monster.action === 'idle') {
             monster.frame = 1;
@@ -55,39 +51,49 @@ function animate() {
             applyDamageToPlayer();
             changeAction('idle');
         } else if (monster.action === 'death') {
+            // Важно: фиксируем последний кадр смерти
             monster.frame = framesConfig.death;
         }
     }
 }
 
-// Интервал анимации (120мс для большей плавности)
 let animInterval = setInterval(animate, 120);
 
 function changeAction(newAct) {
-    if (monster.isDead) return;
+    // Если монстр уже умер, не меняем анимацию ни на что другое
+    if (monster.isDead && newAct !== 'death') return;
+    
     monster.action = newAct;
     monster.frame = 1;
 }
 
-// 5. Логика битвы
 function playerAttack() {
     if (monster.isDead || player.hp <= 0) return;
 
-    // Урон по монстру
-    monster.hp -= 20;
+    monster.hp -= 34; // Увеличил урон для теста смерти
     attackBtn.disabled = true;
 
-    // Визуальный отклик (вспышка)
     spriteImg.style.filter = 'brightness(3)';
     setTimeout(() => spriteImg.style.filter = 'none', 100);
 
     if (monster.hp <= 0) {
         monster.hp = 0;
         monster.isDead = true;
+        
+        // ОЧЕНЬ ВАЖНО: немедленно переключаем на смерть
         changeAction('death');
+        
+        // Убираем кнопку, чтобы не тыкать в труп
+        attackBtn.style.display = 'none';
+        
+        setTimeout(() => {
+            alert("Гоблин повержен!");
+            // Здесь можно вызвать функцию спавна нового моба
+        }, 1000);
     } else {
-        // Ответка гоблина
-        setTimeout(() => changeAction('attack'), 500);
+        setTimeout(() => {
+            if (!monster.isDead) changeAction('attack');
+        }, 500);
     }
     updateUI();
 }
@@ -96,8 +102,6 @@ function applyDamageToPlayer() {
     if (monster.isDead) return;
 
     player.hp -= monster.atk;
-    
-    // Эффект получения урона (экран краснеет)
     document.body.style.backgroundColor = '#4d1a1a';
     setTimeout(() => {
         document.body.style.backgroundColor = '#12121a';
@@ -108,7 +112,7 @@ function applyDamageToPlayer() {
         player.hp = 0;
         updateUI();
         setTimeout(() => {
-            alert("Вы погибли в бою!");
+            alert("Вы погибли!");
             location.reload();
         }, 200);
     }
@@ -121,7 +125,6 @@ function updateUI() {
     hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
 }
 
-// Старт
 preloadImages();
 attackBtn.onclick = playerAttack;
 tg.expand();
