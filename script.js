@@ -13,14 +13,12 @@ const monster = {
 
 const framesConfig = { idle: 4, attack: 6, death: 3 };
 const cachedImages = {};
-const version = Date.now(); 
 
 function preloadImages() {
     for (const action in framesConfig) {
         for (let i = 1; i <= framesConfig[action]; i++) {
-            const imgPath = `img/${monster.type}/${action}_${i}.png?v=${version}`;
             const img = new Image();
-            img.src = imgPath;
+            img.src = `img/${monster.type}/${action}_${i}.png`;
             cachedImages[`${action}_${i}`] = img;
         }
     }
@@ -43,7 +41,6 @@ function animate() {
         spriteImg.src = cachedImages[currentKey].src;
     }
 
-    // НАНЕСЕНИЕ УРОНА ИГРОКУ (на 4-м кадре атаки)
     if (monster.action === 'attack' && monster.frame === 4) {
         applyDamageToPlayer();
     }
@@ -62,7 +59,7 @@ function animate() {
     }
 }
 
-let animInterval = setInterval(animate, 100);
+setInterval(animate, 100);
 
 function changeAction(newAct) {
     if (monster.isDead && newAct !== 'death') return;
@@ -72,10 +69,8 @@ function changeAction(newAct) {
 
 function playerAttack() {
     if (monster.isDead || player.hp <= 0) return;
-
     monster.hp -= 25;
     attackBtn.disabled = true;
-
     spriteImg.style.filter = 'brightness(2.5)';
     setTimeout(() => spriteImg.style.filter = 'none', 100);
 
@@ -85,9 +80,7 @@ function playerAttack() {
         changeAction('death');
         attackBtn.style.display = 'none';
     } else {
-        setTimeout(() => {
-            if (!monster.isDead) changeAction('attack');
-        }, 400);
+        setTimeout(() => { if (!monster.isDead) changeAction('attack'); }, 400);
     }
     updateUI();
 }
@@ -96,21 +89,16 @@ function applyDamageToPlayer() {
     if (monster.isDead) return;
     player.hp -= monster.atk;
     if (player.hp < 0) player.hp = 0;
-    
     updateUI();
-
     if (player.hp === 0) {
-        setTimeout(() => { 
-            alert("Вы пали в бою!"); 
-            location.reload(); 
-        }, 300);
+        setTimeout(() => { alert("Игра окончена!"); location.reload(); }, 300);
     }
 }
 
 function updateUI() {
     monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
     playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
-    hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
+    hpText.textContent = `${player.hp} / ${player.maxHp}`;
 }
 
 preloadImages();

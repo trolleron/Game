@@ -1,13 +1,12 @@
 :root {
-    --bg-dark: #0a0a0f;
     --hp-monster: #ff4757;
     --hp-player: #2ed573;
-    --panel-color: #161622;
+    --panel-bg: #161622;
 }
 
 body {
     margin: 0; padding: 0; height: 100vh;
-    background-color: var(--bg-dark);
+    background-color: #0a0a0f;
     color: #e0e0e0; font-family: sans-serif;
     display: flex; justify-content: center; overflow: hidden;
 }
@@ -19,88 +18,79 @@ body {
 
 .monster-section {
     flex: 1; display: flex; flex-direction: column;
-    justify-content: flex-end; align-items: center;
-    position: relative; padding-bottom: 60px;
+    justify-content: space-between; align-items: center;
+    position: relative; padding: 40px 0 20px 0;
     background: url('img/locations/cave_bg.jpg') no-repeat center center;
     background-size: cover;
 }
 
-/* Оболочка для гоблина и тени */
-.sprite-wrapper {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
+/* Контейнер HP сверху */
+.enemy-hp-wrapper {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+    text-align: center;
+    z-index: 10;
 }
 
-/* ТЕНЬ ПОД ГОБЛИНОМ */
-.sprite-wrapper::after {
-    content: '';
-    position: absolute;
-    bottom: -5px; 
-    width: 140px;
-    height: 25px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    filter: blur(8px);
-    z-index: 1;
+.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+.hp-fill { height: 100%; transition: width 0.3s ease-out; }
+#enemy-hp-fill { background: var(--hp-monster); width: 100%; }
+
+/* СЦЕНА С Г ОБЛИНОМ И ТЕНЬЮ */
+.battle-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;
 }
 
 #enemy-sprite {
     height: 250px;
     width: auto;
-    z-index: 2;
+    z-index: 5;
     position: relative;
+    /* Убираем старый фильтр тени, теперь тень отдельная */
 }
 
-/* HP Монстра (Сверху) */
-.hp-container {
-    position: absolute; top: 30px; text-align: center;
-    background: rgba(0, 0, 0, 0.6); padding: 10px 20px;
-    border-radius: 12px; backdrop-filter: blur(5px);
+.monster-shadow {
+    width: 120px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    filter: blur(8px);
+    margin-top: -15px; /* Задвигаем тень чуть под ноги */
+    z-index: 1;
 }
 
-.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin: 5px auto 0; }
-#enemy-hp-fill { background: var(--hp-monster); width: 100%; height: 100%; }
-
-/* ПАНЕЛЬ ИГРОКА (Исправленная полоска) */
+/* ПАНЕЛЬ ИГРОКА (Исправленная) */
 .player-panel {
-    background: var(--panel-color);
-    padding: 20px 30px;
+    background: var(--panel-bg);
+    padding: 20px 25px;
+    border-top: 1px solid #2d2d3d;
     border-radius: 25px 25px 0 0;
-    box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
 }
 
-.player-info { 
-    display: flex; 
-    justify-content: space-between; 
-    margin-bottom: 8px; 
-    font-size: 0.9rem;
-    font-weight: bold; 
-}
+.player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
 
 .player-hp-container { 
     width: 100%; 
     height: 12px; 
-    background: #1a1a1a;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    overflow: hidden;
+    background: #1a1a1a; 
+    border-radius: 6px; 
+    overflow: hidden; 
+    margin-bottom: 20px; 
 }
 
-#player-hp-fill { 
-    background: var(--hp-player); 
-    width: 100%; 
-    height: 100%;
-    transition: width 0.3s ease-out; 
-}
+#player-hp-fill { background: var(--hp-player); width: 100%; }
 
 .btn-attack {
-    width: 100%; padding: 18px; font-size: 1.4rem; font-weight: bold;
+    width: 100%; padding: 20px; font-size: 1.4rem; font-weight: bold;
     color: white; border: none; border-radius: 15px;
     background: linear-gradient(135deg, #ff4757, #ff6b81);
     box-shadow: 0 5px 0 #8d1d1d;
-    cursor: pointer;
 }
 
 .btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }

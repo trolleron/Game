@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin Cave Battle</title>
+    <title>Goblin Cave</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -11,15 +11,16 @@
 
 <div id="game-container">
     <div class="monster-section">
-        <div class="hp-container">
+        <div class="enemy-hp-wrapper">
             <strong id="enemy-name">ГОРНЫЙ ГОБЛИН</strong>
             <div class="hp-bar-bg">
                 <div id="enemy-hp-fill" class="hp-fill"></div>
             </div>
         </div>
 
-        <div class="sprite-wrapper">
+        <div class="battle-stage">
             <img id="enemy-sprite" src="" alt="">
+            <div class="monster-shadow"></div>
         </div>
     </div>
 
@@ -28,7 +29,7 @@
             <span>ВАШЕ ЗДОРОВЬЕ</span>
             <span id="hp-text">100 / 100</span>
         </div>
-        <div class="hp-bar-bg player-hp-container">
+        <div class="player-hp-container">
             <div id="player-hp-fill" class="hp-fill"></div>
         </div>
         
