@@ -11,7 +11,7 @@ let state = {
 // --- НАСТРОЙКИ АНИМАЦИЙ (Sequence) ---
 // Укажите здесь количество кадров, которые вы загрузили на GitHub
 const ANIM_CONFIG = {
-    goblin:   { idle: 16, attack: 10, death: 10 },
+    goblin:   { idle: 4, attack: 6, death: 3 },
     skeleton: { idle: 4, attack: 3, death: 4 },
     boss:     { idle: 6, attack: 4, death: 6 }
 };
