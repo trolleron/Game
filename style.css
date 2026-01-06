@@ -2,6 +2,7 @@
     --hp-monster: #ff4757;
     --hp-player: #2ed573;
     --panel-bg: #161622;
+    --torch-color: rgba(255, 140, 0, 0.3); /* Цвет отблеска факела */
 }
 
 body {
@@ -18,18 +19,53 @@ body {
 
 .monster-section {
     flex: 1; display: flex; flex-direction: column;
-    justify-content: space-between; align-items: center;
-    position: relative; padding: 40px 0 20px 0;
+    justify-content: flex-end; /* Гоблин стоит внизу, как ты и просил */
+    align-items: center;
+    position: relative;
+    padding-bottom: 20px;
     background: url('img/locations/cave_bg.jpg') no-repeat center center;
     background-size: cover;
 }
 
-/* Контейнер HP сверху */
+/* ДИНАМИЧЕСКИЙ СВЕТ ФАКЕЛОВ */
+.torch-light {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: var(--torch-color);
+    filter: blur(50px);
+    z-index: 1;
+    mix-blend-mode: color-dodge;
+    animation: torch-flicker 2s infinite alternate;
+}
+
+.left-torch { top: 35%; left: 10%; }
+.right-torch { top: 35%; right: 10%; }
+
+@keyframes torch-flicker {
+    0% { transform: scale(1); opacity: 0.6; }
+    30% { transform: scale(1.1) translateX(2px); opacity: 0.8; }
+    60% { transform: scale(0.9) translateY(-2px); opacity: 0.5; }
+    100% { transform: scale(1.05); opacity: 0.7; }
+}
+
+/* Гоблин и его положение */
+#enemy-sprite {
+    height: 240px;
+    width: auto;
+    z-index: 5;
+    position: relative;
+    /* Убрали фильтр тени, чтобы ничего не глючило */
+}
+
+/* HP Монстра */
 .enemy-hp-wrapper {
-    background: rgba(0, 0, 0, 0.6);
+    position: absolute;
+    top: 30px;
+    background: rgba(0, 0, 0, 0.7);
     padding: 10px 20px;
     border-radius: 12px;
-    backdrop-filter: blur(5px);
     text-align: center;
     z-index: 10;
 }
@@ -38,52 +74,17 @@ body {
 .hp-fill { height: 100%; transition: width 0.3s ease-out; }
 #enemy-hp-fill { background: var(--hp-monster); width: 100%; }
 
-/* СЦЕНА С Г ОБЛИНОМ И ТЕНЬЮ */
-.battle-stage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    width: 100%;
-}
-
-#enemy-sprite {
-    height: 250px;
-    width: auto;
-    z-index: 5;
-    position: relative;
-    /* Убираем старый фильтр тени, теперь тень отдельная */
-}
-
-.monster-shadow {
-    width: 120px;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    filter: blur(8px);
-    margin-top: -15px; /* Задвигаем тень чуть под ноги */
-    z-index: 1;
-}
-
-/* ПАНЕЛЬ ИГРОКА (Исправленная) */
+/* ПАНЕЛЬ ИГРОКА */
 .player-panel {
     background: var(--panel-bg);
     padding: 20px 25px;
     border-top: 1px solid #2d2d3d;
     border-radius: 25px 25px 0 0;
+    z-index: 20;
 }
 
-.player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
-
-.player-hp-container { 
-    width: 100%; 
-    height: 12px; 
-    background: #1a1a1a; 
-    border-radius: 6px; 
-    overflow: hidden; 
-    margin-bottom: 20px; 
-}
-
+.player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+.player-hp-container { width: 100%; height: 12px; background: #1a1a1a; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
 #player-hp-fill { background: var(--hp-player); width: 100%; }
 
 .btn-attack {
@@ -92,6 +93,4 @@ body {
     background: linear-gradient(135deg, #ff4757, #ff6b81);
     box-shadow: 0 5px 0 #8d1d1d;
 }
-
 .btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }
-.btn-attack:disabled { background: #333; box-shadow: none; opacity: 0.5; }
