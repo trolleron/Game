@@ -3,63 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Epic Dungeon RPG</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Epic Goblin Battle</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #12121a;
+            --text-color: #ffffff;
+            --hp-red: #ff4757;
+            --gold-yellow: #ffa502;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Верхние статы */
+        .stats-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+
+        /* Игровая зона */
+        .battle-scene {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Монстр */
+        #enemy-sprite {
+            height: 200px; /* Размер гоблина */
+            width: auto;
+            image-rendering: pixelated; /* Сохраняем пиксели четкими */
+            transition: transform 0.1s;
+        }
+
+        .enemy-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Полоска HP */
+        .hp-bar-bg {
+            width: 200px;
+            height: 12px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #enemy-hp-fill {
+            width: 100%;
+            height: 100%;
+            background: var(--hp-red);
+            transition: width 0.2s;
+        }
+
+        /* Кнопки внизу */
+        .controls {
+            padding: 20px;
+            background: #1a1a24;
+            border-top: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-attack {
+            background: linear-gradient(#ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #8d1d1d;
+        }
+
+        .btn-attack:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #8d1d1d;
+        }
+
+        /* Текст урона (вылетающий) */
+        #damage-text {
+            position: absolute;
+            color: var(--gold-yellow);
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 2px 2px #000;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+    </style>
 </head>
 <body>
+
     <div id="game-container">
-        <div id="death-screen" class="hidden">
-            <h1>ВЫ ПОГИБЛИ</h1>
-            <p>Ваш путь прервался в комнате <span id="final-room">0</span></p>
-            <button id="btn-respawn">ВОЗРОДИТЬСЯ</button>
+        <div class="stats-header">
+            <div>ЗОЛОТО: <span id="gold" style="color: #ffa502;">0</span></div>
+            <div>УРОВЕНЬ: <span id="room">1</span></div>
         </div>
 
-        <div class="header-stats">
-            <div class="stat-item"><span class="stat-label">LVL</span><span id="lvl">1</span></div>
-            <div class="stat-item"><span class="stat-label">GOLD</span><span id="gold">0</span></div>
-            <div class="stat-item"><span class="stat-label">ROOM</span><span id="room">1</span></div>
-        </div>
-
-        <div class="game-area">
-            <div class="enemy-display">
-                <span id="enemy-name">Загрузка...</span>
-                <div class="enemy-hp-bar"><div id="enemy-hp-fill"></div></div>
-                <img id="enemy-sprite" alt="Монстр">
-            </div>
+        <div class="battle-scene">
+            <div id="damage-text"></div>
             
-            <div id="toast-container"></div>
-            
-            <div class="player-display">
-                <img id="player-sprite" src="img/hero/idle_1.png" alt="Герой">
-            </div>
-        </div>
-
-        <div class="ui-panel">
-            <div class="player-stats-bar">
-                <div class="player-hp-xp">
-                    <span class="bar-label">HP: <span id="hp-text">100/100</span></span>
-                    <div class="progress-bar"><div id="hp-bar" class="fill red"></div></div>
-                    <span class="bar-label">XP: <span id="xp-text">0/100</span></span>
-                    <div class="progress-bar"><div id="xp-bar" class="fill blue"></div></div>
-                </div>
-                <div class="player-atk-def">
-                    <span class="stat-label">ATK: <span id="atk-value">10</span></span>
-                    <span class="stat-label">DEF: <span id="def-value">5</span></span>
+            <div class="enemy-info">
+                <strong id="enemy-name">ГОБЛИН</strong>
+                <div class="hp-bar-bg">
+                    <div id="enemy-hp-fill"></div>
                 </div>
             </div>
 
-            <div class="actions">
-                <button id="btn-attack" class="main-btn">АТАКОВАТЬ</button>
-                <button id="btn-heal" class="sec-btn">ЗЕЛЬЕ (50g)</button>
-            </div>
+            <img id="enemy-sprite" src="" alt="Гоблин загружается...">
+        </div>
 
-            <div class="shop">
-                <button id="up-atk" class="shop-btn">МЕЧ<br><span id="atk-price">+5 ATK (100g)</span></button>
-                <button id="up-def" class="shop-btn">БРОНЯ<br><span id="def-price">+5 DEF (100g)</span></button>
-            </div>
+        <div class="controls">
+            <button id="btn-attack" class="btn-attack">АТАКОВАТЬ</button>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
