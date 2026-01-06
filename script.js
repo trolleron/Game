@@ -11,7 +11,7 @@ const monster = {
     isDead: false
 };
 
-const framesConfig = { idle: 4, attack: 10, death: 3 };
+const framesConfig = { idle: 4, attack: 6, death: 3 };
 const cachedImages = {};
 const version = Date.now(); // Anti-cache для Telegram
 
