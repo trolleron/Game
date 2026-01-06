@@ -1,7 +1,8 @@
 const tg = window.Telegram.WebApp;
 
-// Загружаем золото из памяти или ставим 0
+// Загрузка данных
 let gold = parseInt(localStorage.getItem('playerGold')) || 0;
+let crystals = parseInt(localStorage.getItem('playerCrystals')) || 0;
 
 const player = { hp: 100, maxHp: 100 };
 const monster = {
@@ -11,7 +12,6 @@ const monster = {
     hp: 100,
     maxHp: 100,
     atk: 15,
-    reward: 10, // Награда за победу
     isDead: false
 };
 
@@ -34,8 +34,8 @@ const monsterHpFill = document.getElementById('enemy-hp-fill');
 const playerHpFill = document.getElementById('player-hp-fill');
 const hpText = document.getElementById('hp-text');
 const goldText = document.getElementById('gold-count');
+const crystalText = document.getElementById('crystal-count');
 const attackBtn = document.getElementById('btn-attack');
-const fires = document.querySelectorAll('.fire-glow');
 
 function animate() {
     if (monster.isDead && monster.action === 'death' && monster.frame >= framesConfig.death) {
@@ -81,44 +81,35 @@ function playerAttack() {
     attackBtn.disabled = true;
 
     spriteImg.style.filter = 'brightness(2.5)';
-    fires.forEach(f => f.style.transform = 'translate(-50%, -50%) scale(2)');
-    
-    setTimeout(() => {
-        spriteImg.style.filter = 'none';
-        fires.forEach(f => f.style.transform = 'translate(-50%, -50%) scale(1)');
-    }, 100);
+    setTimeout(() => spriteImg.style.filter = 'none', 100);
 
     if (monster.hp <= 0) {
         monster.hp = 0;
         monster.isDead = true;
         changeAction('death');
         attackBtn.style.display = 'none';
-        
-        // ВЫПЛАТА НАГРАДЫ
-        addGold(monster.reward);
-        
+        rewardPlayer();
     } else {
-        setTimeout(() => { 
-            if (!monster.isDead) changeAction('attack'); 
-        }, 400);
+        setTimeout(() => { if (!monster.isDead) changeAction('attack'); }, 400);
     }
     updateUI();
 }
 
-function addGold(amount) {
-    gold += amount;
-    localStorage.setItem('playerGold', gold); // Сохраняем
+function rewardPlayer() {
+    gold += 10;
+    // Шанс 1% (0.01) на кристалл
+    if (Math.random() < 0.01) {
+        crystals += 1;
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    }
     
-    // Анимация цифр
-    goldText.classList.add('gold-anim');
-    setTimeout(() => goldText.classList.remove('gold-anim'), 500);
-    
+    localStorage.setItem('playerGold', gold);
+    localStorage.setItem('playerCrystals', crystals);
     updateUI();
 }
 
 function applyDamageToPlayer() {
     if (monster.isDead) return;
-    
     player.hp -= monster.atk;
     if (player.hp < 0) player.hp = 0;
 
@@ -127,12 +118,8 @@ function applyDamageToPlayer() {
     gameContainer.style.animation = 'shake 0.2s ease-in-out'; 
     
     updateUI();
-    
     if (player.hp === 0) {
-        setTimeout(() => { 
-            alert("Вы проиграли! Золото сохранено."); 
-            location.reload(); 
-        }, 300);
+        setTimeout(() => { alert("Поражение!"); location.reload(); }, 300);
     }
 }
 
@@ -141,6 +128,7 @@ function updateUI() {
     playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
     hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
     goldText.textContent = gold;
+    crystalText.textContent = crystals;
 }
 
 preloadImages();
