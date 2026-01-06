@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin Battle Sequence</title>
+    <title>Goblin Cave Battle</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
 <div id="game-container">
-    <div class="monster-section">
+    <div class="monster-section" id="location-bg">
         <div class="hp-container">
-            <strong id="enemy-name">ГОБЛИН</strong>
+            <strong id="enemy-name">ГОРНЫЙ ГОБЛИН</strong>
             <div class="hp-bar-bg">
                 <div id="enemy-hp-fill" class="hp-fill"></div>
             </div>
         </div>
 
-        <img id="enemy-sprite" src="" alt="Загрузка кадров...">
+        <img id="enemy-sprite" src="" alt="Загрузка гоблина...">
     </div>
 
     <div class="player-panel">
         <div class="player-info">
-            <span>ВЫ (ГЕРОЙ)</span>
-            <span id="hp-text">100 / 100 HP</span>
+            <span>ВАШЕ ЗДОРОВЬЕ</span>
+            <span id="hp-text">100 / 100</span>
         </div>
         <div class="hp-bar-bg player-hp-container">
             <div id="player-hp-fill" class="hp-fill"></div>
         </div>
         
-        <button id="btn-attack" class="btn-attack">АТАКОВАТЬ</button>
+        <button id="btn-attack" class="btn-attack">УДАРИТЬ</button>
     </div>
 </div>
 
