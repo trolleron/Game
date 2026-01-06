@@ -3,162 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Epic Goblin Battle</title>
+    <title>Goblin Slayer Quest</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg-color: #12121a;
-            --text-color: #ffffff;
-            --hp-red: #ff4757;
-            --gold-yellow: #ffa502;
+            --hp-monster: #ff4757;
+            --hp-player: #2ed573;
+            --panel-bg: #1c1c27;
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0; height: 100vh;
             background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            color: white; font-family: 'Segoe UI', sans-serif;
+            display: flex; justify-content: center; overflow: hidden;
+            transition: background-color 0.1s;
         }
 
         #game-container {
-            width: 100%;
-            max-width: 400px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background-image: 
-                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-            background-size: 30px 30px;
+            width: 100%; max-width: 450px; height: 100%;
+            display: flex; flex-direction: column;
+            background-image: radial-gradient(circle at center, #1e1e2e 0%, #12121a 100%);
         }
 
-        /* Верхние статы */
-        .stats-header {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            background: rgba(0,0,0,0.3);
-            font-weight: bold;
+        /* Зона монстра */
+        .monster-section {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; position: relative;
         }
 
-        /* Игровая зона */
-        .battle-scene {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        /* Монстр */
         #enemy-sprite {
-            height: 200px; /* Размер гоблина */
-            width: auto;
-            image-rendering: pixelated; /* Сохраняем пиксели четкими */
-            transition: transform 0.1s;
+            height: 220px; width: auto;
+            image-rendering: pixelated;
+            transition: filter 0.1s, transform 0.1s;
         }
 
-        .enemy-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        /* Полоска HP */
+        .hp-container { text-align: center; margin-bottom: 15px; }
         .hp-bar-bg {
-            width: 200px;
-            height: 12px;
-            background: #222;
-            border: 2px solid #444;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 10px;
+            width: 220px; height: 12px; background: #222;
+            border-radius: 6px; border: 2px solid #333; overflow: hidden;
         }
+        .hp-fill { height: 100%; transition: width 0.3s ease; }
+        #enemy-hp-fill { background: var(--hp-monster); width: 100%; }
+        #player-hp-fill { background: var(--hp-player); width: 100%; }
 
-        #enemy-hp-fill {
-            width: 100%;
-            height: 100%;
-            background: var(--hp-red);
-            transition: width 0.2s;
-        }
-
-        /* Кнопки внизу */
-        .controls {
+        /* Нижняя панель игрока */
+        .player-panel {
+            background: var(--panel-bg);
             padding: 20px;
-            background: #1a1a24;
-            border-top: 2px solid #333;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            border-top: 3px solid #2d2d3d;
+            border-radius: 20px 20px 0 0;
         }
 
+        .player-info { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        
         .btn-attack {
-            background: linear-gradient(#ff4757, #ff6b81);
-            color: white;
-            border: none;
-            padding: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #8d1d1d;
+            width: 100%; padding: 18px; font-size: 1.3rem; font-weight: bold;
+            color: white; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            box-shadow: 0 5px 0 #8d1d1d; cursor: pointer;
         }
+        .btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }
+        .btn-attack:disabled { background: #555; box-shadow: none; opacity: 0.6; }
 
-        .btn-attack:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #8d1d1d;
-        }
-
-        /* Текст урона (вылетающий) */
-        #damage-text {
-            position: absolute;
-            color: var(--gold-yellow);
-            font-size: 2rem;
-            font-weight: bold;
-            text-shadow: 2px 2px #000;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 10;
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-100px); }
-        }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div class="stats-header">
-            <div>ЗОЛОТО: <span id="gold" style="color: #ffa502;">0</span></div>
-            <div>УРОВЕНЬ: <span id="room">1</span></div>
-        </div>
-
-        <div class="battle-scene">
-            <div id="damage-text"></div>
-            
-            <div class="enemy-info">
-                <strong id="enemy-name">ГОБЛИН</strong>
-                <div class="hp-bar-bg">
-                    <div id="enemy-hp-fill"></div>
-                </div>
+<div id="game-container">
+    <div class="monster-section">
+        <div class="hp-container">
+            <strong id="enemy-name">ГОБЛИН</strong>
+            <div class="hp-bar-bg">
+                <div id="enemy-hp-fill" class="hp-fill"></div>
             </div>
-
-            <img id="enemy-sprite" src="" alt="Гоблин загружается...">
         </div>
 
-        <div class="controls">
-            <button id="btn-attack" class="btn-attack">АТАКОВАТЬ</button>
-        </div>
+        <img id="enemy-sprite" src="" alt="Загрузка...">
     </div>
 
-    <script src="script.js"></script>
+    <div class="player-panel">
+        <div class="player-info">
+            <span>ВЫ (ГЕРОЙ)</span>
+            <span id="hp-text">100 / 100 HP</span>
+        </div>
+        <div class="hp-bar-bg" style="width: 100%; margin-bottom: 20px;">
+            <div id="player-hp-fill" class="hp-fill"></div>
+        </div>
+        
+        <button id="btn-attack" class="btn-attack">АТАКОВАТЬ</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+
+    const player = { hp: 100, maxHp: 100 };
+    const monster = {
+        type: 'goblin',
+        action: 'idle',
+        frame: 1,
+        hp: 100,
+        maxHp: 100,
+        atk: 15,
+        isDead: false
+    };
+
+    // Твои настройки кадров
+    const framesConfig = { idle: 4, attack: 6, death: 3 };
+
+    const spriteImg = document.getElementById('enemy-sprite');
+    const monsterHpFill = document.getElementById('enemy-hp-fill');
+    const playerHpFill = document.getElementById('player-hp-fill');
+    const hpText = document.getElementById('hp-text');
+    const attackBtn = document.getElementById('btn-attack');
+
+    // --- Анимация ---
+    function animate() {
+        if (monster.isDead && monster.action === 'death' && monster.frame === framesConfig.death) return;
+
+        const path = `img/${monster.type}/${monster.action}_${monster.frame}.png`;
+        spriteImg.src = path;
+
+        monster.frame++;
+
+        if (monster.frame > framesConfig[monster.action]) {
+            if (monster.action === 'idle') {
+                monster.frame = 1;
+            } else if (monster.action === 'attack') {
+                applyDamageToPlayer(); // Урон наносится в конце замаха
+                changeAction('idle');
+            } else if (monster.action === 'death') {
+                monster.frame = framesConfig.death;
+            }
+        }
+    }
+
+    let animInterval = setInterval(animate, 150);
+
+    function changeAction(act) {
+        if (monster.isDead) return;
+        monster.action = act;
+        monster.frame = 1;
+    }
+
+    // --- Бой ---
+    function playerAttack() {
+        if (monster.isDead || player.hp <= 0) return;
+
+        // Игрок бьет гоблина
+        monster.hp -= 20;
+        attackBtn.disabled = true; // Блокируем кнопку на время хода врага
+
+        // Визуальный эффект
+        spriteImg.style.filter = 'brightness(2.5) contrast(1.2)';
+        setTimeout(() => spriteImg.style.filter = 'none', 100);
+
+        if (monster.hp <= 0) {
+            monster.hp = 0;
+            monster.isDead = true;
+            changeAction('death');
+            setTimeout(() => alert("Победа над Гоблином!"), 1000);
+        } else {
+            // Гоблин отвечает
+            setTimeout(() => {
+                changeAction('attack');
+            }, 600);
+        }
+        updateUI();
+    }
+
+    function applyDamageToPlayer() {
+        if (monster.isDead) return;
+
+        player.hp -= monster.atk;
+        
+        // Вспышка экрана при получении урона
+        document.body.style.backgroundColor = '#631e1e';
+        setTimeout(() => {
+            document.body.style.backgroundColor = '#12121a';
+            attackBtn.disabled = false; // Возвращаем кнопку игроку
+        }, 150);
+
+        if (player.hp <= 0) {
+            player.hp = 0;
+            updateUI();
+            setTimeout(() => {
+                alert("Вы проиграли!");
+                location.reload();
+            }, 100);
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
+        playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
+        hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
+    }
+
+    attackBtn.onclick = playerAttack;
+    tg.expand();
+    updateUI();
+</script>
+
 </body>
 </html>
