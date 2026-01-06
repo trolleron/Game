@@ -14,6 +14,7 @@ const monster = {
 const framesConfig = { idle: 4, attack: 6, death: 3 };
 const cachedImages = {};
 
+// Предзагрузка изображений для плавной анимации
 function preloadImages() {
     for (const action in framesConfig) {
         for (let i = 1; i <= framesConfig[action]; i++) {
@@ -30,7 +31,7 @@ const monsterHpFill = document.getElementById('enemy-hp-fill');
 const playerHpFill = document.getElementById('player-hp-fill');
 const hpText = document.getElementById('hp-text');
 const attackBtn = document.getElementById('btn-attack');
-const fires = document.querySelectorAll('.fire-glow'); // Для вспышки факелов
+const fires = document.querySelectorAll('.fire-glow'); // Для эффекта вспышки факелов
 
 function animate() {
     if (monster.isDead && monster.action === 'death' && monster.frame >= framesConfig.death) {
@@ -43,7 +44,7 @@ function animate() {
         spriteImg.src = cachedImages[currentKey].src;
     }
 
-    // Момент нанесения урона игроку
+    // Наносим урон игроку на 4-м кадре атаки гоблина
     if (monster.action === 'attack' && monster.frame === 4) {
         applyDamageToPlayer();
     }
@@ -62,6 +63,7 @@ function animate() {
     }
 }
 
+// Запуск основного цикла анимации (10 кадров в секунду)
 setInterval(animate, 100);
 
 function changeAction(newAct) {
@@ -76,7 +78,7 @@ function playerAttack() {
     monster.hp -= 25;
     attackBtn.disabled = true;
 
-    // Эффект вспышки монстра и факелов
+    // Эффект вспышки гоблина и усиление свечения факелов
     spriteImg.style.filter = 'brightness(2.5)';
     fires.forEach(f => f.style.transform = 'translate(-50%, -50%) scale(2)');
     
@@ -91,7 +93,10 @@ function playerAttack() {
         changeAction('death');
         attackBtn.style.display = 'none';
     } else {
-        setTimeout(() => { if (!monster.isDead) changeAction('attack'); }, 400);
+        // Гоблин контратакует через небольшую паузу
+        setTimeout(() => { 
+            if (!monster.isDead) changeAction('attack'); 
+        }, 400);
     }
     updateUI();
 }
@@ -102,41 +107,31 @@ function applyDamageToPlayer() {
     player.hp -= monster.atk;
     if (player.hp < 0) player.hp = 0;
 
-    // Тряска экрана при получении урона
-    gameContainer.style.animation = 'none';
-    setTimeout(() => {
-        gameContainer.style.animation = 'shake 0.2s ease-in-out';
-    }, 10);
+    // ГАРАНТИРОВАННАЯ ТРЯСКА ЭКРАНА
+    gameContainer.style.animation = 'none'; // Сбрасываем анимацию
+    void gameContainer.offsetWidth;         // Магия: заставляем браузер перерисовать элемент
+    gameContainer.style.animation = 'shake 0.2s ease-in-out'; // Запускаем тряску снова
     
     updateUI();
     
     if (player.hp === 0) {
         setTimeout(() => { 
-            alert("Вы проиграли!"); 
+            alert("Вы пали в бою!"); 
             location.reload(); 
         }, 300);
     }
 }
 
 function updateUI() {
+    // Обновляем полоски здоровья
     monsterHpFill.style.width = (monster.hp / monster.maxHp * 100) + '%';
     playerHpFill.style.width = (player.hp / player.maxHp * 100) + '%';
+    // Обновляем текст (формат как на скриншоте)
     hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
 }
 
-// Добавь этот маленький кусочек в конец твоего style.css для тряски:
-/*
-@keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    20% { transform: translate(-3px, 0px) rotate(-1deg); }
-    40% { transform: translate(3px, 2px) rotate(1deg); }
-    60% { transform: translate(-3px, 1px) rotate(0deg); }
-    80% { transform: translate(3px, 1px) rotate(-1deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
-}
-*/
-
+// Инициализация
 preloadImages();
 attackBtn.onclick = playerAttack;
-tg.expand();
+tg.expand(); // Раскрываем Telegram WebApp на весь экран
 updateUI();
