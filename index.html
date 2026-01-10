@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin Cave RPG</title>
+    <title>Goblin Dungeon RPG</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -23,22 +23,11 @@
     </div>
 
     <div class="player-panel">
-        <div class="resources-row">
-            <div class="res-item">
-                <span class="res-icon">🪙</span>
-                <span id="gold-count">0</span>
-            </div>
-            <div class="res-item">
-                <span class="res-icon">💎</span>
-                <span id="crystal-count">0</span>
-            </div>
-        </div>
-
-        <div class="inventory-grid">
-            <div class="inv-slot active">🗡️</div>
-            <div class="inv-slot">🔒</div>
-            <div class="inv-slot">🔒</div>
-            <div class="inv-slot">🔒</div>
+        <div class="inventory-header">ИНВЕНТАРЬ (СКРОЛЛ ↓)</div>
+        
+        <div class="inventory-scroll-container">
+            <div class="inventory-grid" id="inventory-slots">
+                </div>
         </div>
 
         <div class="player-info">
