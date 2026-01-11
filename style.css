@@ -7,95 +7,47 @@
     --fire-outer: #ff4500;
 }
 
-body {
-    margin: 0; padding: 0; height: 100vh;
-    background-color: #0a0a0f; color: #e0e0e0;
-    font-family: -apple-system, sans-serif; display: flex; justify-content: center; overflow: hidden;
-}
+body { margin: 0; padding: 0; height: 100vh; background-color: #0a0a0f; color: #e0e0e0; font-family: sans-serif; overflow: hidden; }
 
-#game-container { width: 100%; max-width: 450px; height: 100%; display: flex; flex-direction: column; }
+#game-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-.monster-section {
-    flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
-    align-items: center; position: relative; padding-bottom: 20px;
-    background: url('img/locations/cave_bg.jpg') no-repeat center center; background-size: cover;
-}
+.monster-section { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; padding-bottom: 20px; background: url('img/locations/cave_bg.jpg') center/cover; }
 
-/* Огонь факелов (смещение 13%) */
 .torch-fire { position: absolute; width: 24px; height: 40px; z-index: 2; }
 .left-fire { top: 42%; left: 13%; }
 .right-fire { top: 42%; right: 13%; }
-
-.fire-core {
-    width: 100%; height: 100%; background: var(--fire-inner); border-radius: 50% 50% 20% 20%;
-    filter: blur(3px); box-shadow: 0 0 15px var(--fire-inner), 0 -12px 25px var(--fire-mid), 0 -25px 50px var(--fire-outer);
-    animation: flame-dance 0.7s infinite alternate;
-}
-.fire-glow {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 160px; height: 160px; background: radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 75%);
-    filter: blur(30px);
-}
+.fire-core { width: 100%; height: 100%; background: var(--fire-inner); border-radius: 50% 50% 20% 20%; filter: blur(3px); box-shadow: 0 0 15px var(--fire-inner), 0 -12px 25px var(--fire-mid), 0 -25px 50px var(--fire-outer); animation: flame-dance 0.7s infinite alternate; }
+.fire-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; height: 160px; background: radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 75%); filter: blur(30px); }
 
 @keyframes flame-dance { 0% { transform: scale(1); } 100% { transform: scale(1.1) rotate(2deg); } }
 
-#enemy-sprite { height: 250px; width: auto; z-index: 5; position: relative; pointer-events: none; }
+#enemy-sprite { height: 250px; z-index: 5; }
 
-/* ХП Монстра */
-.enemy-hp-wrapper {
-    position: absolute; top: 30px; background: rgba(0, 0, 0, 0.75);
-    padding: 10px 25px; border-radius: 15px; text-align: center; z-index: 10;
-}
-.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 6px; }
-.hp-fill { height: 100%; transition: width 0.3s ease-out; }
+.enemy-hp-wrapper { position: absolute; top: 30px; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 12px; text-align: center; }
+.hp-bar-bg { width: 160px; height: 6px; background: #111; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+.hp-fill { height: 100%; transition: width 0.3s; }
 #enemy-hp-fill { background: var(--hp-monster); }
 
-/* ПАНЕЛЬ ИГРОКА И ИНВЕНТАРЬ */
-.player-panel {
-    background: var(--panel-bg); padding: 15px 20px 25px 20px;
-    border-top: 1px solid #2d2d3d; border-radius: 25px 25px 0 0;
-}
-
-.inventory-header { font-size: 11px; font-weight: bold; color: #555; margin-bottom: 8px; letter-spacing: 1px; }
-
-.inventory-scroll-container {
-    height: 130px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;
-}
-
-/* Стилизация скролла */
-.inventory-scroll-container::-webkit-scrollbar { width: 3px; }
-.inventory-scroll-container::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
-.inventory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-
-.inv-slot {
-    aspect-ratio: 1/1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    font-size: 20px; position: relative; min-height: 50px;
-}
-
-.item-count {
-    position: absolute; bottom: 2px; right: 4px; font-size: 10px;
-    color: #ffd700; font-weight: bold; text-shadow: 1px 1px 1px #000;
-}
-
-/* Здоровье и кнопка */
-.player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; }
-.player-hp-container { width: 100%; height: 10px; background: #1a1a1a; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
+.player-panel { background: var(--panel-bg); padding: 20px; border-top: 1px solid #333; border-radius: 20px 20px 0 0; }
+.player-hp-container { width: 100%; height: 10px; background: #111; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
 #player-hp-fill { background: var(--hp-player); width: 100%; }
 
-.btn-attack {
-    width: 100%; padding: 18px; font-size: 1.2rem; font-weight: 900; color: white;
-    border: none; border-radius: 15px; background: linear-gradient(135deg, #ff4757, #ff6b81);
-    box-shadow: 0 5px 0 #8d1d1d; text-transform: uppercase; cursor: pointer;
-}
-.btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }
-.btn-attack:disabled { opacity: 0.5; }
+.action-row { display: flex; gap: 10px; }
 
-/* Тряска */
-@keyframes shake {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(6px, 4px); }
-    50% { transform: translate(-6px, -4px); }
-    75% { transform: translate(6px, -4px); }
-}
+.btn-attack { flex: 1; padding: 18px; font-size: 1.2rem; font-weight: bold; color: white; border: none; border-radius: 12px; background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 4px 0 #8d1d1d; cursor: pointer; }
+.btn-attack:active { transform: translateY(2px); box-shadow: 0 2px 0 #8d1d1d; }
+
+.btn-inventory { width: 60px; font-size: 1.5rem; background: #2d2d3d; border: 1px solid #444; border-radius: 12px; color: white; cursor: pointer; }
+
+/* ОКНО ИНВЕНТАРЯ */
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.inventory-modal { width: 85%; max-height: 70%; background: #1c1c28; border-radius: 20px; border: 1px solid #444; padding: 20px; display: flex; flex-direction: column; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.close-btn { background: none; border: none; color: #777; font-size: 1.5rem; cursor: pointer; }
+
+.inventory-scroll-container { flex: 1; overflow-y: auto; padding-right: 5px; }
+.inventory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.inv-slot { aspect-ratio: 1/1; background: #111; border: 1px solid #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; position: relative; }
+.item-count { position: absolute; bottom: 2px; right: 5px; font-size: 10px; color: #ffd700; font-weight: bold; }
+
+@keyframes shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-5px, 3px); } 40% { transform: translate(5px, -3px); } }

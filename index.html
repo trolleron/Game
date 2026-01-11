@@ -23,13 +23,6 @@
     </div>
 
     <div class="player-panel">
-        <div class="inventory-header">ИНВЕНТАРЬ (СКРОЛЛ ↓)</div>
-        
-        <div class="inventory-scroll-container">
-            <div class="inventory-grid" id="inventory-slots">
-                </div>
-        </div>
-
         <div class="player-info">
             <span>ВАШЕ ЗДОРОВЬЕ</span>
             <span id="hp-text">100 / 100 HP</span>
@@ -38,7 +31,22 @@
             <div id="player-hp-fill" class="hp-fill"></div>
         </div>
         
-        <button id="btn-attack" class="btn-attack">УДАРИТЬ</button>
+        <div class="action-row">
+            <button id="btn-attack" class="btn-attack">УДАРИТЬ</button>
+            <button id="btn-inventory" class="btn-inventory">🎒</button>
+        </div>
+    </div>
+</div>
+
+<div id="inventory-overlay" class="overlay">
+    <div class="inventory-modal">
+        <div class="modal-header">
+            <h3>ИНВЕНТАРЬ</h3>
+            <button id="close-inventory" class="close-btn">✕</button>
+        </div>
+        <div class="inventory-scroll-container">
+            <div class="inventory-grid" id="inventory-slots"></div>
+        </div>
     </div>
 </div>
 
