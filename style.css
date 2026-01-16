@@ -15,16 +15,29 @@ body {
 
 #game-container { width: 100%; max-width: 450px; height: 100%; display: flex; flex-direction: column; }
 
+/* СЕКЦИЯ ПЕЩЕРЫ */
 .monster-section {
-    flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
-    align-items: center; position: relative; padding-bottom: 20px;
-    background: #0d0d14; /* Здесь будет твой фон пещеры */
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-end;
+    align-items: center; 
+    position: relative; 
+    padding-bottom: 20px;
+    
+    /* ОТОБРАЖЕНИЕ ФОНА ПЕЩЕРЫ */
+    background: url('img/locations/cave_bg.jpg') no-repeat center center;
+    background-size: cover;
+    
+    /* Виньетка для атмосферы (затемнение по краям) */
+    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.9);
 }
 
 /* Эффекты факелов */
 .torch-fire { position: absolute; width: 24px; height: 40px; z-index: 2; }
 .left-fire { top: 42%; left: 13%; }
 .right-fire { top: 42%; right: 13%; }
+
 .fire-core {
     width: 100%; height: 100%; background: var(--fire-inner); border-radius: 50% 50% 20% 20%;
     filter: blur(3px); box-shadow: 0 0 15px var(--fire-inner), 0 -12px 25px var(--fire-mid), 0 -25px 50px var(--fire-outer);
@@ -32,9 +45,10 @@ body {
 }
 .fire-glow {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 160px; height: 160px; background: radial-gradient(circle, rgba(255,140,0,0.2) 0%, transparent 70%);
+    width: 160px; height: 160px; background: radial-gradient(circle, rgba(255,140,0,0.25) 0%, transparent 75%);
     filter: blur(30px);
 }
+
 @keyframes flame-dance { 0% { transform: scale(1); } 100% { transform: scale(1.1) rotate(2deg); } }
 
 /* Настройка спрайта (сетка 4x4, кадр 480px) */
@@ -43,7 +57,7 @@ body {
     height: 480px;
     background-repeat: no-repeat;
     background-position: 0 0;
-    /* Уменьшаем спрайт в 2 раза для мобильных, чтобы он был ~240px */
+    /* Уменьшаем спрайт в 2 раза для мобильных */
     transform: scale(0.5);
     transform-origin: bottom center;
     z-index: 5;
@@ -51,56 +65,65 @@ body {
     pointer-events: none;
 }
 
+/* HP Монстра */
 .enemy-hp-wrapper {
-    position: absolute; top: 30px; background: rgba(0, 0, 0, 0.7);
-    padding: 10px 20px; border-radius: 12px; text-align: center; z-index: 10;
+    position: absolute; top: 30px; background: rgba(0, 0, 0, 0.8);
+    padding: 10px 25px; border-radius: 15px; text-align: center; z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.hp-bar-bg { width: 160px; height: 6px; background: #111; border-radius: 3px; overflow: hidden; margin-top: 5px; }
-#enemy-hp-fill { background: var(--hp-monster); width: 100%; height: 100%; transition: width 0.3s; }
+.hp-bar-bg { width: 180px; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.hp-fill { height: 100%; transition: width 0.3s ease-out; }
+#enemy-hp-fill { background: var(--hp-monster); }
 
-/* Панель управления */
-.player-panel { background: var(--panel-bg); padding: 20px; border-top: 1px solid #333; border-radius: 20px 20px 0 0; }
-.player-hp-container { width: 100%; height: 10px; background: #111; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
-#player-hp-fill { background: var(--hp-player); width: 100%; height: 100%; }
-.player-info { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+/* ПАНЕЛЬ ИГРОКА */
+.player-panel { 
+    background: var(--panel-bg); 
+    padding: 20px; 
+    border-top: 2px solid #2d2d3d; 
+    border-radius: 25px 25px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+}
 
-.action-row { display: flex; gap: 10px; }
+.player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 13px; }
+.player-hp-container { width: 100%; height: 12px; background: #111; border-radius: 6px; overflow: hidden; margin-bottom: 20px; border: 1px solid #333; }
+#player-hp-fill { background: var(--hp-player); transition: width 0.3s; }
+
+.action-row { display: flex; gap: 12px; }
+
 .btn-attack {
-    flex: 1; padding: 18px; font-size: 1.2rem; font-weight: bold; color: white;
-    border: none; border-radius: 12px; background: linear-gradient(135deg, #ff4757, #ff6b81);
-    box-shadow: 0 4px 0 #8d1d1d; cursor: pointer;
+    flex: 1; padding: 18px; font-size: 1.2rem; font-weight: 900; color: white;
+    border: none; border-radius: 15px; background: linear-gradient(135deg, #ff4757, #ff6b81);
+    box-shadow: 0 5px 0 #8d1d1d; text-transform: uppercase; cursor: pointer;
 }
-.btn-attack:active { transform: translateY(2px); box-shadow: 0 2px 0 #8d1d1d; }
+.btn-attack:active { transform: translateY(3px); box-shadow: 0 2px 0 #8d1d1d; }
 .btn-attack:disabled { opacity: 0.5; }
 
 .btn-inventory {
-    width: 65px; font-size: 1.5rem; background: #2d2d3d; border: 1px solid #444;
-    border-radius: 12px; cursor: pointer; color: white;
+    width: 65px; font-size: 1.6rem; background: #2d2d3d; border: 1px solid #444;
+    border-radius: 15px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center;
 }
 
-/* Оверлей инвентаря */
+/* МОДАЛЬНОЕ ОКНО ИНВЕНТАРЯ */
 .overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+    background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px);
 }
 .inventory-modal {
-    width: 85%; max-height: 70%; background: #1c1c28; border-radius: 20px;
-    border: 1px solid #444; padding: 20px; display: flex; flex-direction: column;
+    width: 85%; max-height: 75%; background: #1c1c28; border-radius: 24px;
+    border: 1px solid #444; padding: 25px; display: flex; flex-direction: column;
 }
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.close-btn { background: none; border: none; color: #777; font-size: 1.5rem; cursor: pointer; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-header h3 { margin: 0; letter-spacing: 2px; color: #888; font-size: 14px; }
+.close-btn { background: none; border: none; color: #fff; font-size: 1.8rem; cursor: pointer; opacity: 0.5; }
 
-.inventory-scroll-container { flex: 1; overflow-y: auto; padding-right: 5px; }
+.inventory-scroll-container { flex: 1; overflow-y: auto; padding-right: 8px; }
+.inventory-scroll-container::-webkit-scrollbar { width: 4px; }
+.inventory-scroll-container::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
 .inventory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .inv-slot {
-    aspect-ratio: 1/1; background: #111; border: 1px solid #333; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; font-size: 1.5rem; position: relative;
+    aspect-ratio: 1/1; background: #0f0f16; border: 1px solid #2d2d3d;
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; position: relative;
 }
-.item-count { position: absolute; bottom: 2px; right: 5px; font-size: 10px; color: #ffd700; font-weight: bold; }
-
-@keyframes shake {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(-6px, 4px); }
-    50% { transform: translate(6px, -4px); }
-    75% { transform: translate(-6px, -4px); }
-}
+.
