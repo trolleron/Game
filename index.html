@@ -9,38 +9,34 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="main-layout">
+        <div id="phaser-game"></div>
 
-<div id="game-wrapper">
-    <div id="phaser-container"></div>
-
-    <div class="player-panel">
-        <div class="player-info">
-            <span>ВАШЕ ЗДОРОВЬЕ</span>
-            <span id="hp-text">100 / 100 HP</span>
-        </div>
-        <div class="player-hp-container">
-            <div id="player-hp-fill" class="hp-fill"></div>
-        </div>
-        
-        <div class="action-row">
-            <button id="btn-attack" class="btn-attack">УДАРИТЬ</button>
-            <button id="btn-inventory" class="btn-inventory">🎒</button>
+        <div class="ui-panel">
+            <div class="hp-section">
+                <div class="hp-label">ВАШЕ ЗДОРОВЬЕ <span id="hp-text">100 / 100 HP</span></div>
+                <div class="hp-bar-container">
+                    <div id="hp-bar-fill"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="btn-attack">УДАРИТЬ</button>
+                <button id="btn-inv">🎒</button>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="inventory-overlay" class="overlay">
-    <div class="inventory-modal">
-        <div class="modal-header">
-            <h3>ИНВЕНТАРЬ</h3>
-            <button id="close-inventory" class="close-btn">✕</button>
-        </div>
-        <div class="inventory-scroll-container">
-            <div class="inventory-grid" id="inventory-slots"></div>
+    <div id="inv-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>ИНВЕНТАРЬ</span>
+                <button id="close-inv">✕</button>
+            </div>
+            <div class="inv-grid" id="inv-render"></div>
         </div>
     </div>
-</div>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

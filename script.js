@@ -1,118 +1,98 @@
 const tg = window.Telegram.WebApp;
 
-// Состояние игрока и монстра
+// 1. Исправленная логика инвентаря (ID теперь фиксированные)
 let inventory = JSON.parse(localStorage.getItem('gameInventory')) || [];
 const player = { hp: 100, maxHp: 100 };
-const monsterStats = { hp: 100, maxHp: 100, isDead: false };
+const goblin = { hp: 100, maxHp: 100, dead: false };
 
 const config = {
     type: Phaser.AUTO,
-    parent: 'phaser-container',
+    parent: 'phaser-game',
     width: 480,
-    height: 640,
+    height: 600,
     transparent: true,
-    scene: { preload: preload, create: create }
+    scene: { preload, create }
 };
 
 const game = new Phaser.Game(config);
-let monster;
+let sprite;
 
 function preload() {
-    this.load.image('bg', 'img/locations/cave_bg.jpg');
-    this.load.spritesheet('idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
-    this.load.spritesheet('hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
-    this.load.spritesheet('attack', 'img/goblin/attack.png', { frameWidth: 480, frameHeight: 480 });
-    this.load.spritesheet('death', 'img/goblin/death.png', { frameWidth: 480, frameHeight: 480 });
+    this.load.image('cave', 'img/locations/cave_bg.jpg');
+    this.load.spritesheet('s_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
+    this.load.spritesheet('s_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
+    this.load.spritesheet('s_attack', 'img/goblin/attack.png', { frameWidth: 480, frameHeight: 480 });
+    this.load.spritesheet('s_death', 'img/goblin/death.png', { frameWidth: 480, frameHeight: 480 });
 }
 
 function create() {
-    const scene = this;
-    this.add.image(240, 320, 'bg').setDisplaySize(480, 640);
+    this.add.image(240, 300, 'cave').setDisplaySize(480, 600);
+    
+    this.anims.create({ key: 'a_idle', frames: this.anims.generateFrameNumbers('s_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: 'a_hurt', frames: this.anims.generateFrameNumbers('s_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
+    this.anims.create({ key: 'a_atk', frames: this.anims.generateFrameNumbers('s_attack', {start:0, end:9}), frameRate: 12, repeat: 0 });
+    this.anims.create({ key: 'a_dead', frames: this.anims.generateFrameNumbers('s_death', {start:0, end:9}), frameRate: 10, repeat: 0 });
 
-    // Анимации
-    this.anims.create({ key: 'anim_idle', frames: this.anims.generateFrameNumbers('idle', { start: 0, end: 15 }), frameRate: 12, repeat: -1 });
-    this.anims.create({ key: 'anim_hurt', frames: this.anims.generateFrameNumbers('hurt', { start: 0, end: 9 }), frameRate: 20, repeat: 0 });
-    this.anims.create({ key: 'anim_attack', frames: this.anims.generateFrameNumbers('attack', { start: 0, end: 9 }), frameRate: 12, repeat: 0 });
-    this.anims.create({ key: 'anim_death', frames: this.anims.generateFrameNumbers('death', { start: 0, end: 9 }), frameRate: 10, repeat: 0 });
-
-    monster = this.add.sprite(240, 450, 'idle').setScale(0.8);
-    monster.play('anim_idle');
-
+    sprite = this.add.sprite(240, 420, 's_idle').setScale(0.85);
+    sprite.play('a_idle');
     window.gameScene = this;
 }
 
-function playerAttack() {
-    if (monsterStats.isDead || player.hp <= 0) return;
-
-    const btn = document.getElementById('btn-attack');
-    btn.disabled = true;
-
-    // Урон монстру
-    monsterStats.hp -= 25;
+function handleAttack() {
+    if (goblin.dead || player.hp <= 0) return;
     
-    // Анимация получения урона
-    monster.play('anim_hurt');
+    document.getElementById('btn-attack').disabled = true;
+    goblin.hp -= 25;
+    sprite.play('a_hurt');
 
-    monster.once('animationcomplete', () => {
-        if (monsterStats.hp <= 0) {
-            // СМЕРТЬ
-            monsterStats.isDead = true;
-            monster.play('anim_death');
-            rewardPlayer();
+    sprite.once('animationcomplete', () => {
+        if (goblin.hp <= 0) {
+            goblin.dead = true;
+            sprite.play('a_dead');
+            reward();
         } else {
-            // ОТВЕТНЫЙ УДАР
-            monster.play('anim_attack');
-            monster.once('animationcomplete', () => {
-                applyDamageToPlayer();
-                if (!monsterStats.isDead) {
-                    monster.play('anim_idle');
-                    btn.disabled = false;
+            sprite.play('a_atk');
+            sprite.once('animationcomplete', () => {
+                player.hp -= 10;
+                updateUI();
+                window.gameScene.cameras.main.shake(150, 0.005);
+                if (player.hp > 0) {
+                    sprite.play('a_idle');
+                    document.getElementById('btn-attack').disabled = false;
                 }
             });
         }
     });
 }
 
-function applyDamageToPlayer() {
-    player.hp -= 15;
-    if (player.hp <= 0) { player.hp = 0; alert("Вы погибли!"); location.reload(); }
-    
-    // Тряска камеры
-    window.gameScene.cameras.main.shake(200, 0.01);
-    updateUI();
+function reward() {
+    // Кость теперь всегда имеет ID 'bone', чтобы они стакались!
+    addItem('gold', '🪙', 15);
+    addItem('bone', '🦴', 1);
 }
 
-function rewardPlayer() {
-    addItem('gold', 'Золото', '🪙', 'currency', 10);
-    addItem('goblin_bone', 'Кость', '🦴', 'material', 1);
-}
-
-function addItem(id, name, icon, type, amount) {
-    const existing = inventory.find(i => i.id === id);
-    if (existing) existing.count += amount;
-    else inventory.push({ id, name, icon, type, count: amount });
+function addItem(id, icon, qty) {
+    const item = inventory.find(i => i.id === id);
+    if (item) item.qty += qty;
+    else inventory.push({ id, icon, qty });
     localStorage.setItem('gameInventory', JSON.stringify(inventory));
     updateUI();
 }
 
 function updateUI() {
-    document.getElementById('player-hp-fill').style.width = (player.hp / player.maxHp * 100) + '%';
-    document.getElementById('hp-text').textContent = `${player.hp} / ${player.maxHp} HP`;
+    document.getElementById('hp-bar-fill').style.width = (player.hp) + '%';
+    document.getElementById('hp-text').textContent = `${player.hp} / 100 HP`;
     
-    const grid = document.getElementById('inventory-slots');
-    grid.innerHTML = '';
-    inventory.forEach(item => {
-        const slot = document.createElement('div');
-        slot.className = 'inv-slot';
-        slot.innerHTML = `<span>${item.icon}</span><span class="item-count">${item.count}</span>`;
-        grid.appendChild(slot);
+    const render = document.getElementById('inv-render');
+    render.innerHTML = '';
+    inventory.forEach(i => {
+        render.innerHTML += `<div class="inv-slot"><span>${i.icon}</span><span class="item-qty">${i.qty}</span></div>`;
     });
 }
 
-// Кнопки
-document.getElementById('btn-attack').onclick = playerAttack;
-document.getElementById('btn-inventory').onclick = () => document.getElementById('inventory-overlay').style.display = 'flex';
-document.getElementById('close-inventory').onclick = () => document.getElementById('inventory-overlay').style.display = 'none';
+document.getElementById('btn-attack').onclick = handleAttack;
+document.getElementById('btn-inv').onclick = () => document.getElementById('inv-modal').style.display = 'flex';
+document.getElementById('close-inv').onclick = () => document.getElementById('inv-modal').style.display = 'none';
 
 tg.expand();
 updateUI();
