@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin Dungeon</title>
+    <title>Goblin RPG</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="main-layout">
+    <div id="game-wrapper">
         <div id="phaser-game"></div>
 
         <div class="ui-panel">
-            <div class="hp-section">
-                <div class="hp-label">ВАШЕ ЗДОРОВЬЕ <span id="hp-text">100 / 100 HP</span></div>
-                <div class="hp-bar-container">
-                    <div id="hp-bar-fill"></div>
-                </div>
+            <div class="hp-info">
+                <span>ВАШЕ ЗДОРОВЬЕ</span>
+                <span id="hp-text">100 / 100 HP</span>
+            </div>
+            <div class="hp-bar-bg">
+                <div id="hp-bar-fill"></div>
             </div>
             
-            <div class="controls">
+            <div class="button-row">
                 <button id="btn-attack">УДАРИТЬ</button>
-                <button id="btn-inv">🎒</button>
+                <button id="btn-inv-toggle">🎒</button>
             </div>
         </div>
     </div>
 
-    <div id="inv-modal" class="modal-overlay">
-        <div class="modal-content">
+    <div id="inv-modal" class="modal-hide">
+        <div class="modal-box">
             <div class="modal-header">
                 <span>ИНВЕНТАРЬ</span>
-                <button id="close-inv">✕</button>
+                <button id="btn-close-inv">✕</button>
             </div>
-            <div class="inv-grid" id="inv-render"></div>
+            <div class="inventory-grid" id="inv-container"></div>
         </div>
     </div>
 
