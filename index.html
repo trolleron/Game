@@ -14,7 +14,7 @@
 
         <div class="ui-panel">
             <div class="hp-info">
-                <span>ВАШЕ ЗДОРОВЬЕ</span>
+                <span>ЗДОРОВЬЕ</span>
                 <span id="hp-text">100 / 100 HP</span>
             </div>
             <div class="hp-bar-bg">
@@ -23,7 +23,11 @@
             
             <div class="button-row">
                 <button id="btn-attack">УДАРИТЬ</button>
-                <button id="btn-inv-toggle">🎒</button>
+                
+                <div class="small-btns">
+                    <button id="btn-inv-toggle">🎒</button>
+                    <button id="btn-reset">🔄</button>
+                </div>
             </div>
         </div>
     </div>
@@ -31,7 +35,7 @@
     <div id="inv-modal" class="modal-hide">
         <div class="modal-box">
             <div class="modal-header">
-                <span>ИНВЕНТАРЬ</span>
+                <span>РЮКЗАК</span>
                 <button id="btn-close-inv">✕</button>
             </div>
             <div class="inventory-grid" id="inv-container"></div>

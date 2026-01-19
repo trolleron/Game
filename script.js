@@ -1,11 +1,48 @@
 const tg = window.Telegram.WebApp;
 
-// 1. Инициализация данных
+// --- ЗАГРУЗКА И АВТО-ИСПРАВЛЕНИЕ ИНВЕНТАРЯ ---
 let inventory = JSON.parse(localStorage.getItem('gameInventory')) || [];
+
+// Функция "Пылесос": собирает старый мусор в одну кучу
+function fixOldInventory() {
+    let boneCount = 0;
+    let needsUpdate = false;
+
+    // 1. Фильтруем инвентарь: оставляем нормальные вещи, а кости считаем и удаляем
+    inventory = inventory.filter(item => {
+        // Если это старая кость (с длинным ID или названием)
+        if (item.id.includes('bone') || item.id.includes('club_') || item.name === 'Кость' || item.name === 'Дубина') {
+            boneCount += (item.count || item.qty || 1); // Собираем количество
+            needsUpdate = true;
+            return false; // Удаляем из списка
+        }
+        return true; // Остальное оставляем
+    });
+
+    // 2. Если нашли старые кости, добавляем ОДНУ стопку
+    if (boneCount > 0) {
+        // Проверяем, есть ли уже нормальный слот
+        const cleanBone = inventory.find(i => i.id === 'bone');
+        if (cleanBone) {
+            cleanBone.count += boneCount;
+        } else {
+            inventory.push({ id: 'bone', icon: '🦴', count: boneCount });
+        }
+    }
+
+    // Сохраняем чистый инвентарь
+    if (needsUpdate) {
+        localStorage.setItem('gameInventory', JSON.stringify(inventory));
+    }
+}
+
+// Запускаем чистку сразу при старте
+fixOldInventory();
+
+// --- НАСТРОЙКИ ИГРЫ ---
 const player = { hp: 100, max: 100 };
 const goblin = { hp: 100, max: 100, isDead: false };
 
-// 2. Настройка Phaser
 const config = {
     type: Phaser.AUTO,
     parent: 'phaser-game',
@@ -29,7 +66,6 @@ function preload() {
 function create() {
     this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
     
-    // Анимации
     this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
     this.anims.create({ key: 'atk', frames: this.anims.generateFrameNumbers('g_atk', {start:0, end:9}), frameRate: 12, repeat: 0 });
@@ -40,7 +76,7 @@ function create() {
     window.gameScene = this;
 }
 
-// 3. Логика боя
+// --- ЛОГИКА БОЯ ---
 function doAttack() {
     if (goblin.isDead || player.hp <= 0) return;
     
@@ -68,18 +104,21 @@ function doAttack() {
     });
 }
 
-// 4. Логика ИНВЕНТАРЯ (фикс костей)
+// --- ИНВЕНТАРЬ ---
 function giveReward() {
-    // Золото и кости теперь всегда имеют одинаковый ID для стака
+    // Теперь всегда используем id 'gold' и 'bone'
     addItem('gold', '🪙', 25);
     addItem('bone', '🦴', 1);
 }
 
 function addItem(id, icon, count) {
+    // Ищем предмет по ID
     const existing = inventory.find(item => item.id === id);
     if (existing) {
-        existing.count += count;
+        // Если есть — плюсуем (защита от undefined)
+        existing.count = (existing.count || 0) + count;
     } else {
+        // Если нет — создаем
         inventory.push({ id, icon, count });
     }
     localStorage.setItem('gameInventory', JSON.stringify(inventory));
@@ -101,10 +140,20 @@ function updateUI() {
     });
 }
 
+// --- ФУНКЦИЯ ПОЛНОГО СБРОСА ---
+function resetGame() {
+    if(confirm('Сбросить весь прогресс?')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
 // События
 document.getElementById('btn-attack').onclick = doAttack;
 document.getElementById('btn-inv-toggle').onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
 document.getElementById('btn-close-inv').onclick = () => document.getElementById('inv-modal').classList.remove('modal-show');
+// Кнопка сброса
+document.getElementById('btn-reset').onclick = resetGame;
 
 tg.expand();
 updateUI();
