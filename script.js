@@ -1,17 +1,20 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// 1. ЗАЩИТА ОТ ОШИБОК
+// --- 1. ЗАЩИТА ОТ ОШИБОК ---
 window.onerror = function(msg, url, line) {
-    alert(`ОШИБКА КОДА:\n${msg}\nСтрока: ${line}`);
+    // Выводим ошибку, только если это не мелочь
+    if (!msg.includes('ResizeObserver')) {
+        alert(`ОШИБКА:\n${msg}\nСтрока: ${line}`);
+    }
 };
 
-// 2. ИНВЕНТАРЬ (безопасная версия)
+// --- 2. ИНВЕНТАРЬ ---
 let inventory = [];
 try {
     const saved = localStorage.getItem('gameInventory');
     inventory = saved ? JSON.parse(saved) : [];
-    // Чистка дубликатов костей
+    // Чистка дубликатов
     let boneCount = 0;
     inventory = inventory.filter(i => {
         if (i.id === 'bone' || i.id.includes('club')) {
@@ -23,10 +26,10 @@ try {
     if (boneCount > 0) inventory.push({ id: 'bone', icon: '🦴', count: boneCount });
 } catch (e) { inventory = []; }
 
-// 3. НАСТРОЙКИ ИГРЫ
+// --- 3. НАСТРОЙКИ ---
 const player = { hp: 100, max: 100 };
 const goblin = { hp: 100, max: 100, isDead: false };
-let monster = null; // Изначально пусто
+let monster = null;
 
 const config = {
     type: Phaser.AUTO,
@@ -40,14 +43,11 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
-    // СЛУШАТЕЛЬ ОШИБОК ЗАГРУЗКИ (Скажет, какой файл потерялся)
     this.load.on('loaderror', function(fileObj) {
         alert('НЕ НАЙДЕН ФАЙЛ:\n' + fileObj.src);
     });
 
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
-    
-    // Внимательно проверь эти пути!
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_atk', 'img/goblin/attack.png', { frameWidth: 480, frameHeight: 480 });
@@ -55,7 +55,7 @@ function preload() {
 }
 
 function create() {
-    // 1. Создаем частицу огня (белый кружок)
+    // 1. Создаем текстуру огонька
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffaa00, 1);
     graphics.fillCircle(10, 10, 10);
@@ -66,23 +66,24 @@ function create() {
         this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
     }
 
-    // 3. Эффекты огня (безопасный блок)
-    try {
-        const particles = this.add.particles(0, 0, 'fire_dot', {
-            speedY: { min: -100, max: -50 },
-            speedX: { min: -10, max: 10 },
-            scale: { start: 0.8, end: 0 },
-            alpha: { start: 0.6, end: 0 },
-            lifespan: 800,
-            blendMode: 'ADD'
-        });
-        particles.createEmitter({ x: 85, y: 255 });
-        particles.createEmitter({ x: 405, y: 255 });
-    } catch (e) { console.log("Ошибка частиц"); }
+    // 3. ОГОНЬ (ИСПРАВЛЕНО ДЛЯ PHASER 3.60)
+    // Настройки для обоих факелов
+    const fireConfig = {
+        speedY: { min: -100, max: -50 }, // Летят вверх
+        speedX: { min: -10, max: 10 },   // Дрожат по сторонам
+        scale: { start: 0.8, end: 0 },   // Уменьшаются
+        alpha: { start: 0.6, end: 0 },   // Исчезают
+        lifespan: 800,
+        blendMode: 'ADD',                // Режим наложения "Свечение"
+        frequency: 50                    // Частота появления
+    };
 
-    // 4. Гоблин (с проверкой)
+    // Создаем два отдельных эмиттера, так надежнее
+    this.add.particles(85, 255, 'fire_dot', fireConfig);  // Левый факел
+    this.add.particles(405, 255, 'fire_dot', fireConfig); // Правый факел
+
+    // 4. Гоблин
     if (this.textures.exists('g_idle')) {
-        // Если картинка есть — делаем анимации
         this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
         this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
         this.anims.create({ key: 'atk', frames: this.anims.generateFrameNumbers('g_atk', {start:0, end:9}), frameRate: 12, repeat: 0 });
@@ -91,7 +92,6 @@ function create() {
         monster = this.add.sprite(240, 420, 'g_idle').setScale(0.8);
         monster.play('idle');
     } else {
-        // Если картинки нет — рисуем ЗЕЛЕНЫЙ КВАДРАТ (Заглушка)
         monster = this.add.rectangle(240, 420, 150, 200, 0x00ff00);
         this.add.text(170, 400, "НЕТ\nКАРТИНКИ", { fontSize: '20px', color: '#000', align: 'center' });
     }
@@ -102,21 +102,21 @@ function create() {
 // --- ЛОГИКА БОЯ ---
 function doAttack() {
     if (goblin.isDead || player.hp <= 0) return;
-    if (!monster) return; // Если монстр вообще не создался — выходим
+    if (!monster) return;
 
     const btn = document.getElementById('btn-attack');
     btn.disabled = true;
     
     goblin.hp -= 25;
 
-    // Проверяем: это спрайт с анимацией или просто квадрат?
     if (monster.play) {
-        monster.play('hurt'); // Запускаем анимацию только если она есть
+        monster.play('hurt');
         monster.once('animationcomplete', checkWin);
     } else {
-        // Если это квадрат — просто ждем полсекунды
-        // Анимация "дергания" квадрата
-        this.tweens.add({ targets: monster, x: 250, duration: 50, yoyo: true, repeat: 3 });
+        // Эффект для квадрата-заглушки
+        if (window.gameScene) {
+            window.gameScene.tweens.add({ targets: monster, x: 250, duration: 50, yoyo: true, repeat: 3 });
+        }
         setTimeout(checkWin, 500);
     }
 }
@@ -125,10 +125,9 @@ function checkWin() {
     if (goblin.hp <= 0) {
         goblin.isDead = true;
         if (monster.play) monster.play('death');
-        else monster.fillColor = 0x555555; // Квадрат становится серым
+        else monster.fillColor = 0x555555;
         giveReward();
     } else {
-        // Ответ монстра
         if (monster.play) monster.play('atk');
         
         setTimeout(() => {
@@ -179,7 +178,7 @@ function updateUI() {
 
 // Кнопки
 const btnAtk = document.getElementById('btn-attack');
-if(btnAtk) btnAtk.onclick = doAttack; // Теперь doAttack видит 'monster' глобально
+if(btnAtk) btnAtk.onclick = doAttack;
 
 const btnReset = document.getElementById('btn-reset');
 if(btnReset) btnReset.onclick = () => { if(confirm('Сброс?')) { localStorage.clear(); location.reload(); }};
