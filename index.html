@@ -2,43 +2,206 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goblin RPG</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Goblin Cave RPG</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #phaser-game {
+            width: 100%;
+            max-width: 480px;
+            height: 600px;
+        }
+
+        /* --- UI ИНТЕРФЕЙС --- */
+        .ui-container {
+            position: absolute;
+            bottom: 20px;
+            width: 90%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        /* Полоска HP */
+        .hp-container {
+            position: relative;
+            width: 100%;
+            height: 25px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #hp-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4d4d, #b30000);
+            transition: width 0.3s ease;
+        }
+
+        #hp-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 2px;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Кнопки */
+        .buttons-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-ui {
+            flex: 1;
+            padding: 12px 5px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(to bottom, #444, #222);
+            border: 1px solid #666;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.1s;
+        }
+
+        .btn-ui:active { transform: scale(0.95); }
+        #btn-attack { background: linear-gradient(to bottom, #ff4444, #990000); border-color: #ff6666; }
+
+        /* --- МОДАЛЬНЫЕ ОКНА --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-show { display: flex; }
+
+        .modal-content {
+            background: #222;
+            border: 2px solid #edaf11;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 350px;
+            padding: 20px;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Сетка инвентаря */
+        #inv-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .slot {
+            background: #333;
+            border: 1px solid #555;
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-size: 30px;
+        }
+
+        .qty {
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        /* Стили магазина */
+        .shop-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            border-left: 4px solid #edaf11;
+        }
+
+        .shop-row span { font-size: 14px; margin-bottom: 5px; }
+        .shop-row button {
+            background: #edaf11;
+            color: #000;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        hr { border: 0; border-top: 1px solid #444; margin: 15px 0; }
+    </style>
 </head>
 <body>
-    <div id="game-wrapper">
-        <div id="phaser-game"></div>
 
-        <div class="ui-panel">
-            <div class="hp-info">
-                <span>ЗДОРОВЬЕ</span>
-                <span id="hp-text">100 / 100 HP</span>
-            </div>
-            <div class="hp-bar-bg">
-                <div id="hp-bar-fill"></div>
-            </div>
-            
-            <div class="button-row">
-                <button id="btn-attack">АТАКОВАТЬ</button>
-                
-                <div class="small-btns">
-                    <button id="btn-inv-toggle">🎒</button>
-                    <button id="btn-reset">🔄</button>
-                </div>
-            </div>
+    <div id="phaser-game"></div>
+
+    <div class="ui-container">
+        <div class="hp-container">
+            <div id="hp-bar-fill"></div>
+            <div id="hp-text">100 / 100 HP</div>
+        </div>
+
+        <button id="btn-attack" class="btn-ui">УДАРИТЬ ГОБЛИНА</button>
+
+        <div class="buttons-row">
+            <button id="btn-inv-toggle" class="btn-ui">🎒 Рюкзак</button>
+            <button id="btn-shop-toggle" class="btn-ui">🛒 Магазин</button>
+            <button id="btn-reset" class="btn-ui">🔄 Сброс</button>
         </div>
     </div>
 
-    <div id="inv-modal" class="modal-hide">
-        <div class="modal-box">
-            <div class="modal-header">
-                <span>РЮКЗАК</span>
-                <button id="btn-close-inv">✕</button>
-            </div>
-            <div class="inventory-grid" id="inv-container"></div>
+    <div id="inv-modal" class="modal">
+        <div class="modal-content">
+            <h3>Ваши вещи</h3>
+            <div id="inv-container"></div>
+            <button id="btn-close-inv" class="btn-ui" style="margin-top:20px;">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <h3>Лавка торговца</h3>
+            <div id="shop-items">
+                </div>
+            <button id="btn-close-shop" class="btn-ui" style="margin-top:20px;">Уйти</button>
         </div>
     </div>
 
