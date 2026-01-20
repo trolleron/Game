@@ -34,7 +34,7 @@ function preload() {
 }
 
 function create() {
-    // Проверяем наличие оружия при старте
+    // Проверка оружия при старте для расчета урона
     const savedInv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     player.hasWeapon = savedInv.some(i => i.id === 'goblin_club');
 
@@ -84,13 +84,12 @@ function create() {
     updateUI();
 }
 
-// --- БОЙ ---
+// --- ЛОГИКА БОЯ ---
 function doAttack() {
     if (!isIntroDone || goblin.isDead || player.hp <= 0) return;
 
     document.getElementById('btn-attack').disabled = true;
     
-    // Урон: 40 с дубинкой, 25 без неё
     const currentDamage = player.hasWeapon ? 40 : player.baseDamage;
     goblin.hp -= currentDamage;
 
@@ -103,10 +102,12 @@ function doAttack() {
         } else {
             monster.play('atk');
             monster.once('animationcomplete', () => {
+                // Гоблин бьет в ответ
                 player.hp -= 15;
                 if (player.hp < 0) player.hp = 0;
                 
-                updateUI(); // Здесь обновятся и цифры, и полоска
+                // ВАЖНО: обновляем UI сразу после получения урона
+                updateUI();
                 
                 if (window.gameScene) window.gameScene.cameras.main.shake(150, 0.01);
                 
@@ -123,12 +124,12 @@ function giveReward() {
     addItem('gold', '🪙', 25);
     addItem('bone', '🦴', 1);
     
-    // ГАРАНТИРОВАННЫЙ ДРОП (Шанс 100%)
-    if (!player.hasWeapon) {
-        addItem('goblin_club', 'img/items/club.png', 1, true); 
-        player.hasWeapon = true;
-        tg.showAlert('Вы выбили Дубинку Гоблина! Урон увеличен до 40!');
-    }
+    // Дубинка теперь выпадает ВСЕГДА (шанс 100%) и суммируется
+    addItem('goblin_club', 'img/items/club.png', 1, true); 
+    player.hasWeapon = true;
+    
+    tg.showScanQrPopup({ text: "Победа! Предметы получены." }); // Просто как уведомление
+    setTimeout(() => location.reload(), 2000); // Перезагрузка для нового гоблина
 }
 
 function addItem(id, iconOrPath, count, isImage = false) {
@@ -144,17 +145,17 @@ function addItem(id, iconOrPath, count, isImage = false) {
 }
 
 function updateUI() {
-    // 1. Полоска HP
+    // Обновление полоски (процент)
     const hpBar = document.getElementById('hp-bar-fill');
     if (hpBar) hpBar.style.width = player.hp + '%';
     
-    // 2. ЦИФРЫ HP (Исправлено)
+    // Обновление цифр здоровья (100 / 100 HP)
     const hpText = document.getElementById('hp-text');
     if (hpText) {
         hpText.textContent = `${player.hp} / ${player.maxHp} HP`;
     }
     
-    // 3. Инвентарь
+    // Обновление рюкзака
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
