@@ -1,37 +1,11 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// --- 1. ОТЛАДКА ---
-window.onerror = function(msg, url, line) {
-    if (!msg.includes('ResizeObserver')) {
-        const err = document.createElement('div');
-        err.style.cssText = 'position:fixed; top:0; background:red; color:white; z-index:1000; padding:5px; font-size:10px;';
-        err.innerHTML = `Ошибка: ${msg} (стр. ${line})`;
-        document.body.appendChild(err);
-    }
-};
-
-// --- 2. ЛОГИКА ИНВЕНТАРЯ ---
-let inventory = [];
-try {
-    const saved = localStorage.getItem('gameInventory');
-    inventory = saved ? JSON.parse(saved) : [];
-    
-    let boneQty = 0;
-    inventory = inventory.filter(i => {
-        if (i.id === 'bone' || i.icon === '🦴') {
-            boneQty += (Number(i.count) || 1);
-            return false;
-        }
-        return true;
-    });
-    if (boneQty > 0) inventory.push({ id: 'bone', icon: '🦴', count: boneQty });
-} catch (e) { inventory = []; }
-
-// --- 3. КОНФИГ ИГРЫ ---
+// --- 1. НАСТРОЙКИ ---
 const player = { hp: 100 };
 const goblin = { hp: 100, isDead: false };
 let monster = null;
+let isIntroDone = false; 
 
 const config = {
     type: Phaser.AUTO,
@@ -47,54 +21,71 @@ const game = new Phaser.Game(config);
 function preload() {
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
+    this.load.spritesheet('g_run', 'img/goblin/run.png', { frameWidth: 480, frameHeight: 480 }); 
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_atk', 'img/goblin/attack.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_death', 'img/goblin/death.png', { frameWidth: 480, frameHeight: 480 });
 }
 
 function create() {
+    // Текстура частиц
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
     graphics.generateTexture('fire_particle', 20, 20);
 
-    if (this.textures.exists('bg_cave')) {
-        this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
-    }
+    // Фон
+    this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
 
-    // --- ОГОНЬ (SCALE 2.0) ---
+    // Огонь (твой scale 2.0)
     const fireOptions = {
-        speedY: { min: -110, max: -60 },
-        speedX: { min: -25, max: 25 },
-        // Используем твой scale 2.0 с небольшим разбросом для живости
-        scale: { start: 2.0, end: 0.1 }, 
-        alpha: { start: 0.6, end: 0 },
-        lifespan: 900,
-        blendMode: 'ADD',
-        frequency: 40,
-        tint: [ 0xffcc00, 0xff4400, 0xaa0000 ] // Добавили темно-красный для глубины
+        speedY: { min: -110, max: -60 }, speedX: { min: -25, max: 25 },
+        scale: { start: 2.0, end: 0.1 }, alpha: { start: 0.6, end: 0 },
+        lifespan: 900, blendMode: 'ADD', frequency: 40,
+        tint: [ 0xffcc00, 0xff4400 ]
     };
+    this.add.particles(85, 295, 'fire_particle', fireOptions);
+    this.add.particles(405, 295, 'fire_particle', fireOptions);
 
-    const fireY = 295; // Оптимальная высота для чаш
-    this.add.particles(85, fireY, 'fire_particle', fireOptions);
-    this.add.particles(405, fireY, 'fire_particle', fireOptions);
+    // СОЗДАНИЕ АНИМАЦИЙ
+    // Здесь исправлено на 12 кадров (start:0, end:11)
+    this.anims.create({ key: 'run', frames: this.anims.generateFrameNumbers('g_run', {start:0, end:11}), frameRate: 14, repeat: -1 });
+    
+    this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
+    this.anims.create({ key: 'atk', frames: this.anims.generateFrameNumbers('g_atk', {start:0, end:9}), frameRate: 12, repeat: 0 });
+    this.anims.create({ key: 'death', frames: this.anims.generateFrameNumbers('g_death', {start:0, end:9}), frameRate: 10, repeat: 0 });
 
-    if (this.textures.exists('g_idle')) {
-        this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
-        this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
-        this.anims.create({ key: 'atk', frames: this.anims.generateFrameNumbers('g_atk', {start:0, end:9}), frameRate: 12, repeat: 0 });
-        this.anims.create({ key: 'death', frames: this.anims.generateFrameNumbers('g_death', {start:0, end:9}), frameRate: 10, repeat: 0 });
+    // --- ЛОГИКА ПОЯВЛЕНИЯ ---
+    // Начальная позиция: глубоко в пещере (y: 280), масштаб почти нулевой
+    monster = this.add.sprite(240, 280, 'g_run').setScale(0.01).setAlpha(0);
+    monster.play('run');
 
-        monster = this.add.sprite(240, 420, 'g_idle').setScale(0.85);
-        monster.play('idle');
-    }
+    // Кнопка атаки скрыта до конца пробежки
+    const atkBtn = document.getElementById('btn-attack');
+    if (atkBtn) atkBtn.style.visibility = 'hidden';
+
+    // Анимация приближения
+    this.tweens.add({
+        targets: monster,
+        y: 420,           // Опускается на передний план
+        scale: 0.85,      // Увеличивается до нормального размера
+        alpha: 1,         // Постепенно проявляется из темноты
+        duration: 2500,   // Время бега (2.5 сек)
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+            monster.play('idle'); 
+            isIntroDone = true;
+            if (atkBtn) atkBtn.style.visibility = 'visible'; 
+        }
+    });
 
     window.gameScene = this;
     updateUI();
 }
 
 function doAttack() {
-    if (goblin.isDead || player.hp <= 0 || !monster) return;
+    if (!isIntroDone || goblin.isDead || player.hp <= 0) return;
 
     document.getElementById('btn-attack').disabled = true;
     goblin.hp -= 25;
@@ -127,12 +118,10 @@ function giveReward() {
 }
 
 function addItem(id, icon, count) {
+    let inventory = JSON.parse(localStorage.getItem('gameInventory')) || [];
     const found = inventory.find(i => i.id === id);
-    if (found) {
-        found.count = (Number(found.count) || 0) + count;
-    } else {
-        inventory.push({ id, icon, count: Number(count) });
-    }
+    if (found) found.count = (Number(found.count) || 0) + count;
+    else inventory.push({ id, icon, count });
     localStorage.setItem('gameInventory', JSON.stringify(inventory));
     updateUI();
 }
@@ -144,12 +133,11 @@ function updateUI() {
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
+        let inventory = JSON.parse(localStorage.getItem('gameInventory')) || [];
         inventory.forEach(item => {
             const slot = document.createElement('div');
             slot.className = 'slot';
-            // Гарантируем отображение числа
-            const countText = item.count || '0';
-            slot.innerHTML = `<span>${item.icon}</span><span class="qty">${countText}</span>`;
+            slot.innerHTML = `<span>${item.icon}</span><span class="qty">${item.count || 0}</span>`;
             container.appendChild(slot);
         });
     }
