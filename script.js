@@ -1,32 +1,35 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// --- 1. ЗАЩИТА ОТ ОШИБОК ---
+// --- 1. СИСТЕМА ДИАГНОСТИКИ ---
 window.onerror = function(msg, url, line) {
-    // Выводим ошибку, только если это не мелочь
     if (!msg.includes('ResizeObserver')) {
         alert(`ОШИБКА:\n${msg}\nСтрока: ${line}`);
     }
 };
 
-// --- 2. ИНВЕНТАРЬ ---
+// --- 2. ЛОГИКА ИНВЕНТАРЯ ---
 let inventory = [];
 try {
     const saved = localStorage.getItem('gameInventory');
     inventory = saved ? JSON.parse(saved) : [];
-    // Чистка дубликатов
+    
+    // Пылесос: собираем все разбросанные кости в одну стопку
     let boneCount = 0;
     inventory = inventory.filter(i => {
-        if (i.id === 'bone' || i.id.includes('club')) {
-            boneCount += (i.count || 1);
+        if (i.id === 'bone' || i.id.includes('club') || i.icon === '🦴') {
+            boneCount += (Number(i.count) || 1);
             return false;
         }
         return true;
     });
     if (boneCount > 0) inventory.push({ id: 'bone', icon: '🦴', count: boneCount });
-} catch (e) { inventory = []; }
+    localStorage.setItem('gameInventory', JSON.stringify(inventory));
+} catch (e) { 
+    inventory = []; 
+}
 
-// --- 3. НАСТРОЙКИ ---
+// --- 3. НАСТРОЙКИ ПЕРСОНАЖЕЙ ---
 const player = { hp: 100, max: 100 };
 const goblin = { hp: 100, max: 100, isDead: false };
 let monster = null;
@@ -43,8 +46,9 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
+    // Сообщить, если файл не загрузился
     this.load.on('loaderror', function(fileObj) {
-        alert('НЕ НАЙДЕН ФАЙЛ:\n' + fileObj.src);
+        alert('ФАЙЛ ПОТЕРЯН:\n' + fileObj.src + '\nПроверь название папки и регистра букв!');
     });
 
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
@@ -55,54 +59,55 @@ function preload() {
 }
 
 function create() {
-    // 1. Создаем текстуру огонька
+    // 1. Создаем частицу пламени
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffaa00, 1);
     graphics.fillCircle(10, 10, 10);
     graphics.generateTexture('fire_dot', 20, 20);
 
-    // 2. Фон
+    // 2. Отрисовка фона
     if (this.textures.exists('bg_cave')) {
         this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
     }
 
-    // 3. ОГОНЬ (ИСПРАВЛЕНО ДЛЯ PHASER 3.60)
-    // Настройки для обоих факелов
+    // 3. ПЫШНЫЙ ОГОНЬ (Настройки эмиттера)
     const fireConfig = {
-        speedY: { min: -100, max: -50 }, // Летят вверх
-        speedX: { min: -10, max: 10 },   // Дрожат по сторонам
-        scale: { start: 0.8, end: 0 },   // Уменьшаются
-        alpha: { start: 0.6, end: 0 },   // Исчезают
-        lifespan: 800,
-        blendMode: 'ADD',                // Режим наложения "Свечение"
-        frequency: 50                    // Частота появления
+        speedY: { min: -140, max: -70 }, // Чуть быстрее вверх
+        speedX: { min: -25, max: 25 },   // Шире разлет
+        scale: { start: 1.8, end: 0.1 }, // Большой размер на старте
+        alpha: { start: 0.8, end: 0 },   // Плотный цвет
+        lifespan: 1000,                  // Живет 1 секунду
+        blendMode: 'ADD',                // Свечение
+        frequency: 35,                   // Еще больше частиц
+        // Зона появления по ширине чаши факела (Rectangle: x, y, width, height)
+        emitZone: { type: 'random', source: new Phaser.Geom.Rectangle(-20, 0, 40, 10) }
     };
 
-    // Создаем два отдельных эмиттера, так надежнее
-    this.add.particles(85, 255, 'fire_dot', fireConfig);  // Левый факел
-    this.add.particles(405, 255, 'fire_dot', fireConfig); // Правый факел
+    // Ставим огонь на факелы
+    this.add.particles(85, 255, 'fire_dot', fireConfig);  // Левый
+    this.add.particles(405, 255, 'fire_dot', fireConfig); // Правый
 
-    // 4. Гоблин
+    // 4. Гоблин и его анимации
     if (this.textures.exists('g_idle')) {
         this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
         this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
         this.anims.create({ key: 'atk', frames: this.anims.generateFrameNumbers('g_atk', {start:0, end:9}), frameRate: 12, repeat: 0 });
         this.anims.create({ key: 'death', frames: this.anims.generateFrameNumbers('g_death', {start:0, end:9}), frameRate: 10, repeat: 0 });
         
-        monster = this.add.sprite(240, 420, 'g_idle').setScale(0.8);
+        monster = this.add.sprite(240, 420, 'g_idle').setScale(0.85);
         monster.play('idle');
     } else {
-        monster = this.add.rectangle(240, 420, 150, 200, 0x00ff00);
-        this.add.text(170, 400, "НЕТ\nКАРТИНКИ", { fontSize: '20px', color: '#000', align: 'center' });
+        // Если спрайтов нет — рисуем временный куб
+        monster = this.add.rectangle(240, 420, 150, 200, 0x33ff33);
+        this.add.text(175, 400, "ОШИБКА\nСПРАЙТА", { color: '#000', align: 'center', font: 'bold 20px Arial' });
     }
 
     window.gameScene = this;
 }
 
-// --- ЛОГИКА БОЯ ---
+// --- 4. БОЕВАЯ ЛОГИКА ---
 function doAttack() {
-    if (goblin.isDead || player.hp <= 0) return;
-    if (!monster) return;
+    if (goblin.isDead || player.hp <= 0 || !monster) return;
 
     const btn = document.getElementById('btn-attack');
     btn.disabled = true;
@@ -111,82 +116,7 @@ function doAttack() {
 
     if (monster.play) {
         monster.play('hurt');
-        monster.once('animationcomplete', checkWin);
+        monster.once('animationcomplete', checkBattleStatus);
     } else {
-        // Эффект для квадрата-заглушки
-        if (window.gameScene) {
-            window.gameScene.tweens.add({ targets: monster, x: 250, duration: 50, yoyo: true, repeat: 3 });
-        }
-        setTimeout(checkWin, 500);
-    }
-}
-
-function checkWin() {
-    if (goblin.hp <= 0) {
-        goblin.isDead = true;
-        if (monster.play) monster.play('death');
-        else monster.fillColor = 0x555555;
-        giveReward();
-    } else {
-        if (monster.play) monster.play('atk');
-        
-        setTimeout(() => {
-            player.hp -= 15;
-            updateUI();
-            if (window.gameScene) window.gameScene.cameras.main.shake(150, 0.01);
-            
-            if (player.hp > 0) {
-                if (monster.play) monster.play('idle');
-                document.getElementById('btn-attack').disabled = false;
-            }
-        }, 500);
-    }
-}
-
-// --- ИНТЕРФЕЙС ---
-function giveReward() {
-    addItem('gold', '🪙', 25);
-    addItem('bone', '🦴', 1);
-}
-
-function addItem(id, icon, count) {
-    const found = inventory.find(i => i.id === id);
-    if (found) found.count += count;
-    else inventory.push({ id, icon, count });
-    localStorage.setItem('gameInventory', JSON.stringify(inventory));
-    updateUI();
-}
-
-function updateUI() {
-    const hpBar = document.getElementById('hp-bar-fill');
-    if (hpBar) hpBar.style.width = player.hp + '%';
-    
-    const hpText = document.getElementById('hp-text');
-    if (hpText) hpText.textContent = `${player.hp} / 100 HP`;
-
-    const grid = document.getElementById('inv-container');
-    if (grid) {
-        grid.innerHTML = '';
-        inventory.forEach(item => {
-            const slot = document.createElement('div');
-            slot.className = 'slot';
-            slot.innerHTML = `<span>${item.icon}</span><span class="qty">${item.count}</span>`;
-            grid.appendChild(slot);
-        });
-    }
-}
-
-// Кнопки
-const btnAtk = document.getElementById('btn-attack');
-if(btnAtk) btnAtk.onclick = doAttack;
-
-const btnReset = document.getElementById('btn-reset');
-if(btnReset) btnReset.onclick = () => { if(confirm('Сброс?')) { localStorage.clear(); location.reload(); }};
-
-const btnInv = document.getElementById('btn-inv-toggle');
-if(btnInv) btnInv.onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
-
-const btnClose = document.getElementById('btn-close-inv');
-if(btnClose) btnClose.onclick = () => document.getElementById('inv-modal').classList.remove('modal-show');
-
-updateUI();
+        // Анимация тряски для куба-заглушки
+        window.gameScene.tweens.add({ targets: monster, x:
