@@ -2,28 +2,31 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // --- 1. ОТЛАДКА ---
-// Если игра не запустится, ты увидишь текст ошибки на экране.
 window.onerror = function(msg, url, line) {
-    const errorBox = document.createElement('div');
-    errorBox.style.cssText = 'position:fixed; top:10px; left:10px; background:red; color:white; z-index:1000; padding:10px; font-size:12px;';
-    errorBox.innerHTML = `Ошибка: ${msg}<br>Строка: ${line}`;
-    document.body.appendChild(errorBox);
+    if (!msg.includes('ResizeObserver')) {
+        const err = document.createElement('div');
+        err.style.cssText = 'position:fixed; top:0; background:red; color:white; z-index:1000; padding:5px; font-size:10px;';
+        err.innerHTML = `Ошибка: ${msg} (стр. ${line})`;
+        document.body.appendChild(err);
+    }
 };
 
-// --- 2. ИНВЕНТАРЬ ---
+// --- 2. ЛОГИКА ИНВЕНТАРЯ ---
 let inventory = [];
 try {
     const saved = localStorage.getItem('gameInventory');
     inventory = saved ? JSON.parse(saved) : [];
-    let boneCount = 0;
+    
+    // Склеиваем кости в один слот
+    let boneQty = 0;
     inventory = inventory.filter(i => {
         if (i.id === 'bone' || i.icon === '🦴') {
-            boneCount += (Number(i.count) || 1);
+            boneQty += (Number(i.count) || 1);
             return false;
         }
         return true;
     });
-    if (boneCount > 0) inventory.push({ id: 'bone', icon: '🦴', count: boneCount });
+    if (boneQty > 0) inventory.push({ id: 'bone', icon: '🦴', count: boneQty });
 } catch (e) { inventory = []; }
 
 // --- 3. КОНФИГ ИГРЫ ---
@@ -36,14 +39,13 @@ const config = {
     parent: 'phaser-game',
     width: 480,
     height: 600,
-    backgroundColor: '#000000', // Черный фон по умолчанию
+    backgroundColor: '#000000',
     scene: { preload, create }
 };
 
 const game = new Phaser.Game(config);
 
 function preload() {
-    // Загрузка ресурсов
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
@@ -52,34 +54,35 @@ function preload() {
 }
 
 function create() {
-    // 1. Создаем текстуру частицы (простой белый круг)
+    // Текстура частицы
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
     graphics.generateTexture('fire_particle', 20, 20);
 
-    // 2. Фон
+    // Фон
     if (this.textures.exists('bg_cave')) {
         this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
     }
 
-    // 3. ОГОНЬ (Упрощенная, но пышная версия без emitZone)
+    // --- ОГОНЬ (ОПУЩЕН НИЖЕ) ---
     const fireOptions = {
-        speedY: { min: -120, max: -60 },
-        speedX: { min: -25, max: 25 },
-        scale: { start: 1.8, end: 0.1 },
+        speedY: { min: -100, max: -50 },
+        speedX: { min: -20, max: 20 },
+        scale: { start: 1.5, end: 0.1 },
         alpha: { start: 0.6, end: 0 },
         lifespan: 800,
         blendMode: 'ADD',
-        frequency: 40,
-        tint: [ 0xffaa00, 0xff4400 ] // Цвета пламени
+        frequency: 45,
+        tint: [ 0xffcc00, 0xff4400 ]
     };
 
-    // Добавляем частицы на координаты факелов
-    this.add.particles(85, 255, 'fire_particle', fireOptions);
-    this.add.particles(405, 255, 'fire_particle', fireOptions);
+    // Раньше Y был 255. Опускаем до 290, чтобы огонь "сидел" в чаше.
+    const fireY = 290; 
+    this.add.particles(85, fireY, 'fire_particle', fireOptions);
+    this.add.particles(405, fireY, 'fire_particle', fireOptions);
 
-    // 4. ГОБЛИН
+    // Гоблин
     if (this.textures.exists('g_idle')) {
         this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
         this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
@@ -88,43 +91,39 @@ function create() {
 
         monster = this.add.sprite(240, 420, 'g_idle').setScale(0.85);
         monster.play('idle');
-    } else {
-        // Если спрайтов нет — просто текст
-        this.add.text(180, 400, "НЕТ ГОБЛИНА", { color: '#00ff00' });
     }
 
     window.gameScene = this;
     updateUI();
 }
 
-// --- 4. ЛОГИКА ---
+// --- ЛОГИКА БОЯ ---
 function doAttack() {
     if (goblin.isDead || player.hp <= 0 || !monster) return;
 
     document.getElementById('btn-attack').disabled = true;
     goblin.hp -= 25;
 
-    if (monster.play) {
-        monster.play('hurt');
-        monster.once('animationcomplete', () => {
-            if (goblin.hp <= 0) {
-                goblin.isDead = true;
-                monster.play('death');
-                giveReward();
-            } else {
-                monster.play('atk');
-                monster.once('animationcomplete', () => {
-                    player.hp -= 15;
-                    updateUI();
-                    if (window.gameScene) window.gameScene.cameras.main.shake(150, 0.01);
-                    if (player.hp > 0) {
-                        monster.play('idle');
-                        document.getElementById('btn-attack').disabled = false;
-                    }
-                });
-            }
-        });
-    }
+    monster.play('hurt');
+    monster.once('animationcomplete', () => {
+        if (goblin.hp <= 0) {
+            goblin.isDead = true;
+            monster.play('death');
+            giveReward();
+        } else {
+            monster.play('atk');
+            monster.once('animationcomplete', () => {
+                player.hp -= 15;
+                if (player.hp < 0) player.hp = 0;
+                updateUI();
+                if (window.gameScene) window.gameScene.cameras.main.shake(150, 0.01);
+                if (player.hp > 0) {
+                    monster.play('idle');
+                    document.getElementById('btn-attack').disabled = false;
+                }
+            });
+        }
+    });
 }
 
 function giveReward() {
@@ -150,13 +149,15 @@ function updateUI() {
         inventory.forEach(item => {
             const slot = document.createElement('div');
             slot.className = 'slot';
-            slot.innerHTML = `<span>${item.icon}</span><span class="qty">${item.count || 1}</span>`;
+            // Исправляем 'undefined': если count нет, пишем '1'
+            const countText = (item.count !== undefined && item.count !== null) ? item.count : '1';
+            slot.innerHTML = `<span>${item.icon}</span><span class="qty">${countText}</span>`;
             container.appendChild(slot);
         });
     }
 }
 
-// ПРИВЯЗКА СОБЫТИЙ
+// КНОПКИ
 document.getElementById('btn-attack').onclick = doAttack;
 document.getElementById('btn-reset').onclick = () => { localStorage.clear(); location.reload(); };
 document.getElementById('btn-inv-toggle').onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
