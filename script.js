@@ -5,7 +5,7 @@ const player = { hp: 100, maxHp: 100, baseDamage: 25 };
 let enemy = { hp: 100, isDead: false };
 let monster = null;
 let isIntroDone = false;
-let currentScene = null; // Ссылка на сцену для респауна
+let currentScene = null;
 
 const config = {
     type: Phaser.AUTO,
@@ -29,9 +29,8 @@ function preload() {
 }
 
 function create() {
-    currentScene = this; // Сохраняем сцену
+    currentScene = this;
     
-    // Текстура огня
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
@@ -48,7 +47,6 @@ function create() {
     this.add.particles(85, 295, 'fire_particle', fireOptions);
     this.add.particles(405, 295, 'fire_particle', fireOptions);
 
-    // Создаем анимации
     this.anims.create({ key: 'run', frames: this.anims.generateFrameNumbers('g_run', {start:0, end:11}), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
@@ -114,7 +112,7 @@ function doAttack() {
             monster.once('animationcomplete', () => {
                 player.hp -= 15;
                 if (player.hp < 0) player.hp = 0;
-                updateUI(); // Обновляем цифры здоровья
+                updateUI();
                 
                 currentScene.cameras.main.shake(150, 0.01);
                 
@@ -132,12 +130,10 @@ function giveReward() {
     addItem('bone', '🦴', 1);
     addItem('goblin_club', 'img/items/club.png', 1, true); 
     
-    tg.MainButton.setText("ПОБЕДА! СЛЕДУЮЩИЙ ГОБЛИН ЧЕРЕЗ 3 СЕК").show();
-    
+    // Убрали MainButton, ставим задержку респауна в 1 секунду
     setTimeout(() => {
-        tg.MainButton.hide();
         spawnGoblin();
-    }, 3000);
+    }, 1000);
 }
 
 function addItem(id, icon, count, isImage = false) {
@@ -153,15 +149,12 @@ function addItem(id, icon, count, isImage = false) {
 }
 
 function updateUI() {
-    // Полоска HP
     const fill = document.getElementById('hp-bar-fill');
     if (fill) fill.style.width = player.hp + '%';
     
-    // Цифры HP
     const text = document.getElementById('hp-text');
     if (text) text.innerText = player.hp + ' / ' + player.maxHp + ' HP';
     
-    // Инвентарь
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
@@ -179,6 +172,6 @@ function updateUI() {
 }
 
 document.getElementById('btn-attack').onclick = doAttack;
-document.getElementById('btn-reset').onclick = () => { localStorage.clear(); location.reload(); };
+document.getElementById('btn-reset').onclick = () => { if(confirm('Сбросить прогресс?')) { localStorage.clear(); location.reload(); }};
 document.getElementById('btn-inv-toggle').onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
 document.getElementById('btn-close-inv').onclick = () => document.getElementById('inv-modal').classList.remove('modal-show');
