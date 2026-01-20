@@ -69,7 +69,7 @@ function create() {
     const fireOptions = {
         speedY: { min: -100, max: -50 },
         speedX: { min: -20, max: 20 },
-        scale: { start: 1.5, end: 0.1 },
+        scale: { start: 2.0, end: 0.1 },
         alpha: { start: 0.6, end: 0 },
         lifespan: 800,
         blendMode: 'ADD',
