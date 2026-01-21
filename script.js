@@ -1,12 +1,11 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настройки игрока
+// --- 1. НАСТРОЙКИ ИГРОКА ---
 const player = { 
     hp: 100, 
     maxHp: 100, 
-    baseDamage: 25,
-    weaponPower: 0 // Доп. урон от лучшего оружия в инвентаре
+    baseDamage: 25 
 };
 
 let enemy = { hp: 100, isDead: false };
@@ -16,10 +15,10 @@ let isIntroDone = false;
 
 // Цены магазина
 const PRICES = {
-    sell_bone: 10,      // Цена продажи кости
-    sell_club: 50,      // Цена продажи дубинки
-    buy_potion: 30,     // Цена лечения (восстанавливает 50 HP)
-    buy_sword: 200      // Цена Стального меча (урон +60)
+    sell_bone: 10,
+    sell_club: 50,
+    buy_potion: 30,
+    buy_sword: 200
 };
 
 const config = {
@@ -36,7 +35,7 @@ const game = new Phaser.Game(config);
 function preload() {
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
     this.load.image('item_club', 'img/items/club.png');
-    this.load.image('item_sword', 'img/items/sword.png'); // Загрузи картинку меча, если есть
+    this.load.image('item_sword', 'img/items/sword.png'); 
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_run', 'img/goblin/run.png', { frameWidth: 480, frameHeight: 480 }); 
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
@@ -47,7 +46,7 @@ function preload() {
 function create() {
     currentScene = this;
     
-    // Частицы огня
+    // Огонь
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
@@ -64,7 +63,7 @@ function create() {
     this.add.particles(85, 295, 'fire_particle', fireOptions);
     this.add.particles(405, 295, 'fire_particle', fireOptions);
 
-    // Анимации
+    // Анимации (Бег 12 кадров)
     this.anims.create({ key: 'run', frames: this.anims.generateFrameNumbers('g_run', {start:0, end:11}), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
@@ -105,9 +104,10 @@ function doAttack() {
     if (!isIntroDone || enemy.isDead || player.hp <= 0) return;
     document.getElementById('btn-attack').disabled = true;
     
-    // Считаем урон на основе лучшего оружия
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     let damageBonus = 0;
+    
+    // Расчет урона: меч (60) или дубинка (15)
     if (inv.some(i => i.id === 'steel_sword')) damageBonus = 60;
     else if (inv.some(i => i.id === 'goblin_club')) damageBonus = 15;
 
@@ -139,10 +139,10 @@ function giveReward() {
     addItem('gold', '🪙', 25);
     addItem('bone', '🦴', 1);
     addItem('goblin_club', 'img/items/club.png', 1, true); 
-    setTimeout(() => spawnGoblin(), 1000);
+    setTimeout(() => spawnGoblin(), 1000); // Респаун 1 сек
 }
 
-// --- ЛОГИКА ИНВЕНТАРЯ И МАГАЗИНА ---
+// --- ИНВЕНТАРЬ И МАГАЗИН ---
 
 function addItem(id, icon, count, isImage = false) {
     let inventory = JSON.parse(localStorage.getItem('gameInventory')) || [];
@@ -157,14 +157,23 @@ function addItem(id, icon, count, isImage = false) {
 }
 
 function updateUI() {
-    // HP
+    const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
+
+    // 1. HP Цифры и полоска
     const fill = document.getElementById('hp-bar-fill');
     if (fill) fill.style.width = player.hp + '%';
     const text = document.getElementById('hp-text');
     if (text) text.innerText = player.hp + ' / ' + player.maxHp + ' HP';
     
-    // Инвентарь
-    const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
+    // 2. Иконка на кнопке атаки
+    const weaponIcon = document.getElementById('weapon-icon');
+    if (weaponIcon) {
+        if (inv.some(i => i.id === 'steel_sword')) weaponIcon.src = 'img/items/sword.png';
+        else if (inv.some(i => i.id === 'goblin_club')) weaponIcon.src = 'img/items/club.png';
+        else weaponIcon.src = 'img/items/club.png'; 
+    }
+
+    // 3. Отрисовка рюкзака
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
@@ -177,7 +186,6 @@ function updateUI() {
         });
     }
 
-    // Обновляем магазин (цены и кнопки)
     updateShopUI(inv);
 }
 
@@ -190,7 +198,7 @@ function updateShopUI(inv) {
     const clubs = inv.find(i => i.id === 'goblin_club')?.count || 0;
 
     shopContainer.innerHTML = `
-        <p>Ваше золото: 🪙 ${gold}</p>
+        <p style="color:#edaf11">Ваше золото: 🪙 ${gold}</p>
         <hr>
         <div class="shop-row">
             <span>Зелье лечения (+50 HP)</span>
@@ -202,12 +210,12 @@ function updateShopUI(inv) {
         </div>
         <hr>
         <div class="shop-row">
-            <span>Продать кости (все)</span>
-            <button onclick="sellItem('bone')">Продать за ${bones * PRICES.sell_bone}🪙</button>
+            <span>Продать кости (${bones} шт.)</span>
+            <button onclick="sellItem('bone')">+$ ${bones * PRICES.sell_bone}</button>
         </div>
         <div class="shop-row">
-            <span>Продать лишние дубинки</span>
-            <button onclick="sellItem('club')">Продать за ${Math.max(0, clubs-1) * PRICES.sell_club}🪙</button>
+            <span>Продать дубинки (${Math.max(0, clubs-1)} шт.)</span>
+            <button onclick="sellItem('club')">+$ ${Math.max(0, clubs-1) * PRICES.sell_club}</button>
         </div>
     `;
 }
@@ -221,19 +229,19 @@ window.buyItem = function(type) {
         if (gold >= PRICES.buy_potion) {
             goldObj.count -= PRICES.buy_potion;
             player.hp = Math.min(player.maxHp, player.hp + 50);
-            tg.showAlert("Вы выпили зелье! +50 HP");
-        } else tg.showAlert("Недостаточно золота!");
+            tg.showAlert("Вы вылечились!");
+        } else tg.showAlert("Мало золота!");
     } 
     else if (type === 'sword') {
         if (gold >= PRICES.buy_sword) {
             if (inv.some(i => i.id === 'steel_sword')) {
-                tg.showAlert("У вас уже есть этот меч!");
+                tg.showAlert("Меч уже куплен!");
                 return;
             }
             goldObj.count -= PRICES.buy_sword;
             addItem('steel_sword', 'img/items/sword.png', 1, true);
-            tg.showAlert("Вы купили Стальной меч!");
-        } else tg.showAlert("Недостаточно золота!");
+            tg.showAlert("Куплен Стальной меч!");
+        } else tg.showAlert("Мало золота!");
     }
     localStorage.setItem('gameInventory', JSON.stringify(inv));
     updateUI();
@@ -242,7 +250,8 @@ window.buyItem = function(type) {
 window.sellItem = function(type) {
     let inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     let goldObj = inv.find(i => i.id === 'gold');
-    
+    if (!goldObj) return;
+
     if (type === 'bone') {
         let boneObj = inv.find(i => i.id === 'bone');
         if (boneObj && boneObj.count > 0) {
@@ -254,16 +263,14 @@ window.sellItem = function(type) {
         let clubObj = inv.find(i => i.id === 'goblin_club');
         if (clubObj && clubObj.count > 1) {
             goldObj.count += (clubObj.count - 1) * PRICES.sell_club;
-            clubObj.count = 1; // Оставляем одну себе
+            clubObj.count = 1; 
         }
     }
     localStorage.setItem('gameInventory', JSON.stringify(inv));
     updateUI();
 };
 
-// Кнопки открытия/закрытия
 document.getElementById('btn-attack').onclick = doAttack;
+document.getElementById('btn-reset').onclick = () => { if(confirm('Сброс?')) { localStorage.clear(); location.reload(); }};
 document.getElementById('btn-inv-toggle').onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
-document.getElementById('btn-close-inv').onclick = () => document.getElementById('inv-modal').classList.remove('modal-show');
 document.getElementById('btn-shop-toggle').onclick = () => document.getElementById('shop-modal').classList.add('modal-show');
-document.getElementById('btn-close-shop').onclick = () => document.getElementById('shop-modal').classList.remove('modal-show');
