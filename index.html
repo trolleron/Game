@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Goblin RPG</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <div id="phaser-game"></div>
+
+    <div class="ui-container">
+        <div class="hp-container">
+            <div id="hp-bar-fill"></div>
+            <div id="hp-text">100 / 100 HP</div>
+        </div>
+
+        <div class="action-row">
+            <button id="btn-attack" class="no-weapon">
+                <img id="weapon-icon" src="img/items/club.png" alt="weapon">
+            </button>
+        </div>
+
+        <div class="menu-row">
+            <button id="btn-inv-toggle" class="btn-menu">🎒 Рюкзак</button>
+            <button id="btn-shop-toggle" class="btn-menu">🛒 Магазин</button>
+            <button id="btn-reset" class="btn-menu">🔄</button>
+        </div>
+    </div>
+
+    <div id="inv-modal" class="modal">
+        <div class="modal-content">
+            <h3>Рюкзак</h3>
+            <div id="inv-container"></div>
+            <button class="btn-close" onclick="closeModals()">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <h3>Магазин</h3>
+            <div id="shop-items"></div>
+            <button class="btn-close" onclick="closeModals()">Уйти</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('modal-show')); }
+    </script>
+</body>
+</html>

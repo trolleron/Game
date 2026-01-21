@@ -1,55 +1,92 @@
-body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
-#game-wrapper { display: flex; flex-direction: column; height: 100vh; }
-
-#phaser-game { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; }
-canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-.ui-panel { background: #161622; padding: 15px 20px 25px; border-top: 2px solid #2d2d3d; z-index: 50; }
-.hp-info { display: flex; justify-content: space-between; color: #ccc; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
-.hp-bar-bg { width: 100%; height: 10px; background: #111; border-radius: 5px; border: 1px solid #333; overflow: hidden; margin-bottom: 15px; }
-#hp-bar-fill { height: 100%; width: 100%; background: #2ed573; transition: width 0.3s; }
-
-/* ОБНОВЛЕННЫЕ КНОПКИ */
-.button-row { display: flex; gap: 10px; }
-
-#btn-attack { 
-    flex: 1; /* Занимает всё свободное место */
-    height: 60px; 
-    background: linear-gradient(#ff4757, #ff6b81); 
-    border: none; border-radius: 12px; 
-    color: #fff; font-size: 1.2rem; font-weight: 900; 
-    box-shadow: 0 4px 0 #8d1d1d; 
-}
-#btn-attack:active { transform: translateY(2px); box-shadow: 0 2px 0 #8d1d1d; }
-#btn-attack:disabled { filter: grayscale(1); transform: translateY(2px); box-shadow: none; }
-
-.small-btns {
-    display: flex;
-    flex-direction: column; /* Кнопки друг под другом или рядом, давай лучше рядом */
-    gap: 5px;
+* { box-sizing: border-box; }
+body {
+    margin: 0; padding: 0;
+    background: #000;
+    color: white;
+    font-family: sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex; flex-direction: column;
 }
 
-/* Кнопки справа (Инвентарь и Рестарт) */
-#btn-inv-toggle, #btn-reset { 
-    width: 60px; 
-    height: 60px; /* Квадратные */
-    background: #2d2d3d; 
-    border: 1px solid #444; 
-    border-radius: 12px; 
-    font-size: 1.5rem; 
-    color: #fff;
+#phaser-game {
+    flex-grow: 1;
+    width: 100%;
+    display: flex; justify-content: center; align-items: center;
+}
+
+canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain;
+}
+
+.ui-container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 10px 15px calc(15px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px;
+}
+
+.hp-container {
+    position: relative;
+    width: 100%; height: 26px;
+    background: #222; border: 1px solid #444;
+    border-radius: 6px; overflow: hidden;
+}
+
+#hp-bar-fill {
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, #ff4444, #880000);
+    transition: width 0.3s ease;
+}
+
+#hp-text {
+    position: absolute; width: 100%; text-align: center;
+    top: 4px; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000;
+}
+
+.action-row { display: flex; justify-content: center; }
+
+#btn-attack {
+    width: 75px; height: 75px;
+    background: #1a1a1a;
+    border: 2px solid #edaf11;
+    border-radius: 14px;
     cursor: pointer;
-}
-#btn-reset {
-    font-size: 1.2rem;
-    background: #3d2d2d; /* Чуть красноватый для опасной кнопки */
+    display: flex; justify-content: center; align-items: center;
 }
 
-/* Модалка */
-.modal-hide { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+#btn-attack img { width: 70%; height: 70%; object-fit: contain; }
+
+/* Если оружия нет - иконка тусклая */
+#btn-attack.no-weapon img { opacity: 0.2; filter: grayscale(1); }
+
+.menu-row { display: flex; gap: 10px; }
+.btn-menu, .btn-close {
+    flex: 1; padding: 12px;
+    background: #222; border: 1px solid #444;
+    color: white; border-radius: 10px; font-weight: bold;
+}
+
+.modal {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center;
+}
 .modal-show { display: flex; }
-.modal-box { width: 85%; background: #1c1c28; border-radius: 20px; padding: 20px; border: 1px solid #444; max-height: 70%; overflow-y: auto; }
-.modal-header { display: flex; justify-content: space-between; color: #888; margin-bottom: 15px; font-size: 14px; }
-.inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.slot { aspect-ratio: 1/1; background: #0f0f16; border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; position: relative; }
-.qty { position: absolute; bottom: 4px; right: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 4px; }
+.modal-content {
+    background: #111; border: 1px solid #edaf11; padding: 20px;
+    width: 85%; max-width: 350px; border-radius: 20px;
+}
+
+#inv-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+.slot { background: #0a0a0a; border: 1px solid #222; aspect-ratio: 1/1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.slot img { width: 65%; }
+.qty { position: absolute; bottom: 4px; right: 6px; font-size: 11px; color: #edaf11; }
+
+.shop-row { 
+    background: #1a1a1a; padding: 12px; margin-bottom: 8px; 
+    border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+}
+.shop-row button { background: #edaf11; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; }

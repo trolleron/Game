@@ -12,13 +12,10 @@ const PRICES = { sell_bone: 10, sell_club: 50, buy_potion: 30, buy_sword: 200 };
 const config = {
     type: Phaser.AUTO,
     parent: 'phaser-game',
-    width: 480, // Внутреннее разрешение для логики
+    width: 480,
     height: 600,
     backgroundColor: '#000000',
-    scale: {
-        mode: Phaser.Scale.FIT, // Авто-вписывание в экран
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: { preload, create }
 };
 
@@ -38,8 +35,7 @@ function preload() {
 function create() {
     currentScene = this;
     this.add.image(240, 300, 'bg_cave').setDisplaySize(480, 600);
-
-    // Анимации
+    
     this.anims.create({ key: 'run', frames: this.anims.generateFrameNumbers('g_run', {start:0, end:11}), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('g_idle', {start:0, end:15}), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'hurt', frames: this.anims.generateFrameNumbers('g_hurt', {start:0, end:9}), frameRate: 20, repeat: 0 });
@@ -54,10 +50,8 @@ function spawnGoblin() {
     if (!currentScene) return;
     enemy.hp = 100; enemy.isDead = false; isIntroDone = false;
     if (monster) monster.destroy();
-
     monster = currentScene.add.sprite(240, 320, 'g_run').setScale(0.01).setAlpha(0);
     monster.play('run');
-
     currentScene.tweens.add({
         targets: monster, y: 400, scale: 0.8, alpha: 1, duration: 2000,
         onComplete: () => { monster.play('idle'); isIntroDone = true; }
@@ -66,7 +60,6 @@ function spawnGoblin() {
 
 function doAttack() {
     if (!isIntroDone || enemy.isDead || player.hp <= 0) return;
-    
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     let bonus = 0;
     if (inv.find(i => i.id === 'steel_sword' && i.count > 0)) bonus = 60;
@@ -74,16 +67,12 @@ function doAttack() {
 
     enemy.hp -= (player.baseDamage + bonus);
     monster.play('hurt');
-    
     monster.once('animationcomplete', () => {
-        if (enemy.hp <= 0) {
-            enemy.isDead = true; monster.play('death');
-            giveReward();
-        } else {
+        if (enemy.hp <= 0) { enemy.isDead = true; monster.play('death'); giveReward(); }
+        else {
             monster.play('atk');
             monster.once('animationcomplete', () => {
-                player.hp = Math.max(0, player.hp - 15);
-                updateUI();
+                player.hp = Math.max(0, player.hp - 15); updateUI();
                 currentScene.cameras.main.shake(100, 0.005);
                 if (player.hp > 0) monster.play('idle');
             });
@@ -109,29 +98,18 @@ function addItem(id, icon, count, isImage = false) {
 
 function updateUI() {
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
-    
-    // HP
     document.getElementById('hp-bar-fill').style.width = player.hp + '%';
     document.getElementById('hp-text').innerText = player.hp + ' / ' + player.maxHp + ' HP';
     
-    // Оружие на кнопке (исправление бага со сбросом)
     const btn = document.getElementById('btn-attack');
     const icon = document.getElementById('weapon-icon');
     const hasSword = inv.find(i => i.id === 'steel_sword' && i.count > 0);
     const hasClub = inv.find(i => i.id === 'goblin_club' && i.count > 0);
 
-    if (hasSword) {
-        icon.src = 'img/items/sword.png';
-        btn.classList.remove('no-weapon');
-    } else if (hasClub) {
-        icon.src = 'img/items/club.png';
-        btn.classList.remove('no-weapon');
-    } else {
-        icon.src = 'img/items/club.png'; // Оставляем силуэт дубинки
-        btn.classList.add('no-weapon'); // Делаем её прозрачной (через CSS)
-    }
+    if (hasSword) { icon.src = 'img/items/sword.png'; btn.classList.remove('no-weapon'); }
+    else if (hasClub) { icon.src = 'img/items/club.png'; btn.classList.remove('no-weapon'); }
+    else { icon.src = 'img/items/club.png'; btn.classList.add('no-weapon'); }
 
-    // Рюкзак
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
@@ -152,7 +130,6 @@ function updateShopUI(inv) {
     const clubs = inv.find(i => i.id === 'goblin_club')?.count || 0;
     const shop = document.getElementById('shop-items');
     if (!shop) return;
-
     shop.innerHTML = `
         <p style="color:#edaf11; font-weight:bold;">Золото: 🪙 ${gold}</p>
         <div class="shop-row"><span>Зелье (+50 HP)</span><button onclick="buyItem('potion')">${PRICES.buy_potion}🪙</button></div>
@@ -179,19 +156,15 @@ window.sellItem = function(t) {
     let g = inv.find(i => i.id === 'gold');
     if (t==='bone') {
         let b = inv.find(i => i.id === 'bone');
-        g.count += b.count * PRICES.sell_bone; b.count = 0;
+        if (b) { g.count += b.count * PRICES.sell_bone; b.count = 0; }
     } else if (t==='club') {
         let c = inv.find(i => i.id === 'goblin_club');
-        if (c.count > 1) { g.count += (c.count-1) * PRICES.sell_club; c.count = 1; }
+        if (c && c.count > 1) { g.count += (c.count-1) * PRICES.sell_club; c.count = 1; }
     }
     localStorage.setItem('gameInventory', JSON.stringify(inv)); updateUI();
 };
 
 document.getElementById('btn-attack').onclick = doAttack;
-document.getElementById('btn-reset').onclick = () => { 
-    localStorage.clear(); 
-    player.hp = 100; // Сбрасываем здоровье в памяти
-    location.reload(); 
-};
+document.getElementById('btn-reset').onclick = () => { localStorage.clear(); location.reload(); };
 document.getElementById('btn-inv-toggle').onclick = () => document.getElementById('inv-modal').classList.add('modal-show');
 document.getElementById('btn-shop-toggle').onclick = () => document.getElementById('shop-modal').classList.add('modal-show');
