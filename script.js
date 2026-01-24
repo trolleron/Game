@@ -24,8 +24,11 @@ const game = new Phaser.Game(config);
 
 function preload() {
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
+    // Загружаем иконки предметов для использования в Phaser (если понадобится)
     this.load.image('item_club', 'img/items/club.png');
     this.load.image('item_sword', 'img/items/sword.png');
+    // ВАЖНО: Убедись, что картинка руки лежит здесь: img/items/hand.png
+    
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_run', 'img/goblin/run.png', { frameWidth: 480, frameHeight: 480 }); 
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
@@ -36,7 +39,7 @@ function preload() {
 function create() {
     currentScene = this;
     
-    // Возвращаем огонь (он пропал, потому что мы удалили генерацию текстуры)
+    // Генерация текстуры для частиц огня
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
@@ -69,7 +72,6 @@ function spawnGoblin() {
     enemy.hp = 100; enemy.isDead = false; isIntroDone = false;
     if (monster) monster.destroy();
 
-    // Быстрый выбег гоблина (как было в лучшей версии)
     monster = currentScene.add.sprite(240, 280, 'g_run').setScale(0.01).setAlpha(0);
     monster.play('run');
 
@@ -78,7 +80,7 @@ function spawnGoblin() {
         y: 420,
         scale: 0.85,
         alpha: 1,
-        duration: 1500, // Ускорили выбег (было 2500, стало 1500)
+        duration: 1500, // Быстрый выбег (1.5 сек)
         ease: 'Cubic.easeIn',
         onComplete: () => {
             monster.play('idle'); 
@@ -92,8 +94,9 @@ function doAttack() {
     
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     let bonus = 0;
-    if (inv.some(i => i.id === 'steel_sword')) bonus = 60;
-    else if (inv.some(i => i.id === 'goblin_club')) bonus = 15;
+    // Проверяем наличие оружия для бонуса урона
+    if (inv.some(i => i.id === 'steel_sword' && i.count > 0)) bonus = 60;
+    else if (inv.some(i => i.id === 'goblin_club' && i.count > 0)) bonus = 15;
 
     enemy.hp -= (player.baseDamage + bonus);
     monster.play('hurt');
@@ -101,10 +104,11 @@ function doAttack() {
     monster.once('animationcomplete', () => {
         if (enemy.hp <= 0) {
             enemy.isDead = true; monster.play('death');
+            // Награда за победу
             addItem('gold', '🪙', 25);
             addItem('bone', '🦴', 1);
             addItem('goblin_club', 'img/items/club.png', 1, true); 
-            setTimeout(() => spawnGoblin(), 1000);
+            setTimeout(() => spawnGoblin(), 1000); // Респаун через 1 сек
         } else {
             monster.play('atk');
             monster.once('animationcomplete', () => {
@@ -135,22 +139,26 @@ function updateUI() {
     const text = document.getElementById('hp-text');
     if (text) text.innerText = player.hp + ' / ' + player.maxHp + ' HP';
     
-    // Иконка оружия на кнопке
+    // --- ЛОГИКА ИКОНКИ ОРУЖИЯ ---
     const btn = document.getElementById('btn-attack');
     const icon = document.getElementById('weapon-icon');
+    
+    // Проверяем, есть ли в инвентаре оружие (количество > 0)
     const hasSword = inv.some(i => i.id === 'steel_sword' && i.count > 0);
     const hasClub = inv.some(i => i.id === 'goblin_club' && i.count > 0);
 
+    // Сбрасываем прозрачность кнопки в нормальное состояние
+    btn.style.opacity = "1"; 
+
     if (hasSword) { 
         icon.src = 'img/items/sword.png'; 
-        btn.style.opacity = "1";
     } else if (hasClub) { 
         icon.src = 'img/items/club.png'; 
-        btn.style.opacity = "1";
     } else { 
-        icon.src = 'img/items/club.png'; 
-        btn.style.opacity = "0.3"; // Если нет оружия - тускло
+        // Если оружия нет совсем, ставим иконку пустой руки
+        icon.src = 'img/items/hand.png'; 
     }
+    // ---------------------------
 
     // Инвентарь
     const container = document.getElementById('inv-container');
