@@ -1,14 +1,12 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настройки игрока
 const player = { hp: 100, maxHp: 100, baseDamage: 25 };
 let enemy = { hp: 100, isDead: false };
 let monster = null;
 let currentScene = null;
 let isIntroDone = false;
 
-// Цены
 const PRICES = { sell_bone: 10, sell_club: 50, buy_potion: 30, buy_sword: 200 };
 
 const config = {
@@ -17,6 +15,7 @@ const config = {
     width: 480,
     height: 600,
     backgroundColor: '#000000',
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: { preload, create }
 };
 
@@ -24,11 +23,9 @@ const game = new Phaser.Game(config);
 
 function preload() {
     this.load.image('bg_cave', 'img/locations/cave_bg.jpg');
-    // Загружаем иконки предметов для использования в Phaser (если понадобится)
     this.load.image('item_club', 'img/items/club.png');
-    this.load.image('item_sword', 'img/items/sword.png');
-    // ВАЖНО: Убедись, что картинка руки лежит здесь: img/items/hand.png
-    
+    this.load.image('item_sword', 'img/items/sword.png'); 
+    this.load.image('item_hand', 'img/items/hand.png'); 
     this.load.spritesheet('g_idle', 'img/goblin/idle.png', { frameWidth: 480, frameHeight: 480 });
     this.load.spritesheet('g_run', 'img/goblin/run.png', { frameWidth: 480, frameHeight: 480 }); 
     this.load.spritesheet('g_hurt', 'img/goblin/hurt.png', { frameWidth: 480, frameHeight: 480 });
@@ -39,7 +36,7 @@ function preload() {
 function create() {
     currentScene = this;
     
-    // Генерация текстуры для частиц огня
+    // Частицы огня
     const graphics = this.make.graphics({x: 0, y: 0, add: false});
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(10, 10, 10);
@@ -71,49 +68,35 @@ function spawnGoblin() {
     if (!currentScene) return;
     enemy.hp = 100; enemy.isDead = false; isIntroDone = false;
     if (monster) monster.destroy();
-
     monster = currentScene.add.sprite(240, 280, 'g_run').setScale(0.01).setAlpha(0);
     monster.play('run');
-
     currentScene.tweens.add({
-        targets: monster,
-        y: 420,
-        scale: 0.85,
-        alpha: 1,
-        duration: 1500, // Быстрый выбег (1.5 сек)
-        ease: 'Cubic.easeIn',
-        onComplete: () => {
-            monster.play('idle'); 
-            isIntroDone = true;
-        }
+        targets: monster, y: 420, scale: 0.85, alpha: 1, duration: 1500, ease: 'Cubic.easeIn',
+        onComplete: () => { monster.play('idle'); isIntroDone = true; }
     });
 }
 
 function doAttack() {
     if (!isIntroDone || enemy.isDead || player.hp <= 0) return;
-    
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
     let bonus = 0;
-    // Проверяем наличие оружия для бонуса урона
-    if (inv.some(i => i.id === 'steel_sword' && i.count > 0)) bonus = 60;
-    else if (inv.some(i => i.id === 'goblin_club' && i.count > 0)) bonus = 15;
+    if (inv.find(i => i.id === 'steel_sword' && i.count > 0)) bonus = 60;
+    else if (inv.find(i => i.id === 'goblin_club' && i.count > 0)) bonus = 15;
 
     enemy.hp -= (player.baseDamage + bonus);
     monster.play('hurt');
-    
     monster.once('animationcomplete', () => {
-        if (enemy.hp <= 0) {
-            enemy.isDead = true; monster.play('death');
-            // Награда за победу
+        if (enemy.hp <= 0) { 
+            enemy.isDead = true; monster.play('death'); 
             addItem('gold', '🪙', 25);
             addItem('bone', '🦴', 1);
-            addItem('goblin_club', 'img/items/club.png', 1, true); 
-            setTimeout(() => spawnGoblin(), 1000); // Респаун через 1 сек
-        } else {
+            addItem('goblin_club', 'img/items/club.png', 1, true);
+            setTimeout(() => spawnGoblin(), 1000); 
+        }
+        else {
             monster.play('atk');
             monster.once('animationcomplete', () => {
-                player.hp = Math.max(0, player.hp - 15);
-                updateUI();
+                player.hp = Math.max(0, player.hp - 15); updateUI();
                 currentScene.cameras.main.shake(150, 0.01);
                 if (player.hp > 0) monster.play('idle');
             });
@@ -132,42 +115,26 @@ function addItem(id, icon, count, isImage = false) {
 
 function updateUI() {
     const inv = JSON.parse(localStorage.getItem('gameInventory')) || [];
+    document.getElementById('hp-bar-fill').style.width = player.hp + '%';
+    document.getElementById('hp-text').innerText = player.hp + ' / ' + player.maxHp + ' HP';
     
-    // HP
-    const fill = document.getElementById('hp-bar-fill');
-    if (fill) fill.style.width = player.hp + '%';
-    const text = document.getElementById('hp-text');
-    if (text) text.innerText = player.hp + ' / ' + player.maxHp + ' HP';
-    
-    // --- ЛОГИКА ИКОНКИ ОРУЖИЯ ---
-    const btn = document.getElementById('btn-attack');
+    // Иконка оружия
     const icon = document.getElementById('weapon-icon');
-    
-    // Проверяем, есть ли в инвентаре оружие (количество > 0)
-    const hasSword = inv.some(i => i.id === 'steel_sword' && i.count > 0);
-    const hasClub = inv.some(i => i.id === 'goblin_club' && i.count > 0);
+    const hasSword = inv.find(i => i.id === 'steel_sword' && i.count > 0);
+    const hasClub = inv.find(i => i.id === 'goblin_club' && i.count > 0);
 
-    // Сбрасываем прозрачность кнопки в нормальное состояние
-    btn.style.opacity = "1"; 
+    if (hasSword) icon.src = 'img/items/sword.png';
+    else if (hasClub) icon.src = 'img/items/club.png';
+    else icon.src = 'img/items/hand.png';
 
-    if (hasSword) { 
-        icon.src = 'img/items/sword.png'; 
-    } else if (hasClub) { 
-        icon.src = 'img/items/club.png'; 
-    } else { 
-        // Если оружия нет совсем, ставим иконку пустой руки
-        icon.src = 'img/items/hand.png'; 
-    }
-    // ---------------------------
-
-    // Инвентарь
+    // Рюкзак
     const container = document.getElementById('inv-container');
     if (container) {
         container.innerHTML = '';
         inv.filter(i => i.count > 0).forEach(item => {
             const slot = document.createElement('div');
             slot.className = 'slot';
-            const visual = item.isImage ? `<img src="${item.icon}" style="width:70%;">` : `<span>${item.icon}</span>`;
+            const visual = item.isImage ? `<img src="${item.icon}">` : `<span>${item.icon}</span>`;
             slot.innerHTML = visual + `<span class="qty">${item.count}</span>`;
             container.appendChild(slot);
         });
@@ -182,11 +149,11 @@ function updateShopUI(inv) {
     const shop = document.getElementById('shop-items');
     if (!shop) return;
     shop.innerHTML = `
-        <p style="color:#edaf11">Золото: 🪙 ${gold}</p>
+        <p style="color:#edaf11; font-weight:bold;">Золото: 🪙 ${gold}</p>
         <div class="shop-row"><span>Зелье (+50 HP)</span><button onclick="buyItem('potion')">30🪙</button></div>
         <div class="shop-row"><span>Меч (+60 Урон)</span><button onclick="buyItem('sword')">200🪙</button></div>
-        <div class="shop-row"><span>Продать кости</span><button onclick="sellItem('bone')">+${bones * PRICES.sell_bone}🪙</button></div>
-        <div class="shop-row"><span>Продать дубинки</span><button onclick="sellItem('club')">+${Math.max(0, clubs-1) * PRICES.sell_club}🪙</button></div>
+        <div class="shop-row"><span>Продать кости</span><button onclick="sellItem('bone')">+${bones * 10}🪙</button></div>
+        <div class="shop-row"><span>Продать дубинки</span><button onclick="sellItem('club')">+${Math.max(0, clubs-1) * 50}🪙</button></div>
     `;
 }
 
