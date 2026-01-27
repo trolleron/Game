@@ -1,96 +1,52 @@
 * { box-sizing: border-box; }
 body {
     margin: 0; padding: 0;
-    background: #000;
-    color: white;
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden;
-    height: 100vh;
-    display: flex; flex-direction: column;
+    background: #000; color: white;
+    font-family: sans-serif; overflow: hidden;
+    height: 100vh; display: flex; flex-direction: column;
 }
 
-#phaser-game {
-    flex-grow: 1;
-    width: 100%;
-    display: flex; justify-content: center; align-items: center;
-}
-
-canvas {
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain;
-}
+#phaser-game { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; }
+canvas { max-width: 100% !important; max-height: 100% !important; object-fit: contain; }
 
 .ui-container {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
+    width: 100%; max-width: 480px; margin: 0 auto;
     padding: 10px 15px calc(15px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 12px;
 }
 
-/* Здоровье */
 .hp-container {
-    position: relative;
-    width: 100%; height: 26px;
-    background: #222; border: 1px solid #444;
-    border-radius: 8px; overflow: hidden;
+    position: relative; width: 100%; height: 26px;
+    background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden;
 }
-#hp-bar-fill {
-    width: 100%; height: 100%;
-    background: linear-gradient(90deg, #ff4444, #880000);
-    transition: width 0.3s ease;
-}
-#hp-text {
-    position: absolute; width: 100%; text-align: center;
-    top: 4px; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000;
-}
+#hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4444, #880000); transition: width 0.3s ease; }
+#hp-text { position: absolute; width: 100%; text-align: center; top: 4px; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
 
-/* Кнопка атаки - теперь яркая */
 .action-row { display: flex; justify-content: center; }
 #btn-attack {
-    width: 85px; height: 85px;
-    background: rgba(255, 255, 255, 0.15); /* Светлая подложка для яркости */
-    border: 3px solid #edaf11;
-    border-radius: 18px;
-    cursor: pointer;
-    display: flex; justify-content: center; align-items: center;
-    transition: transform 0.1s, background 0.2s;
+    width: 85px; height: 85px; background: rgba(255, 255, 255, 0.15);
+    border: 3px solid #edaf11; border-radius: 18px; display: flex; justify-content: center; align-items: center;
 }
-#btn-attack:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.3); }
-#btn-attack img { 
-    width: 80%; height: 80%; 
-    object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-}
+#btn-attack img { width: 80%; height: 80%; object-fit: contain; }
 
-/* Меню */
 .menu-row { display: flex; gap: 10px; }
 .btn-menu, .btn-close {
-    flex: 1; padding: 12px;
-    background: #1c1c21; border: 1px solid #333;
+    flex: 1; padding: 12px; background: #1c1c21; border: 1px solid #333;
     color: white; border-radius: 12px; font-weight: bold; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 
-/* Модальные окна */
-.modal {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center;
-}
+/* Стиль для иконки рюкзака на кнопке */
+.btn-icon { width: 22px; height: 22px; object-fit: contain; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
 .modal-show { display: flex; }
-.modal-content {
-    background: #111; border: 2px solid #edaf11; padding: 25px;
-    width: 85%; max-width: 350px; border-radius: 24px; text-align: center;
-}
+.modal-content { background: #111; border: 2px solid #edaf11; padding: 25px; width: 85%; max-width: 350px; border-radius: 24px; text-align: center; }
 
-/* Инвентарь и Магазин */
 #inv-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
 .slot { background: #0a0a0a; border: 1px solid #222; aspect-ratio: 1/1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
 .slot img { width: 70%; }
-.qty { position: absolute; bottom: 5px; right: 8px; font-size: 11px; color: #edaf11; font-weight: bold; }
+.qty { position: absolute; bottom: 5px; right: 8px; font-size: 11px; color: #edaf11; }
 
-.shop-row { 
-    background: #1a1a1a; padding: 12px; margin-bottom: 10px; 
-    border-radius: 12px; display: flex; justify-content: space-between; align-items: center;
-}
-.shop-row button { background: #edaf11; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; color: #000; }
+.shop-row { background: #1a1a1a; padding: 12px; margin-bottom: 10px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+.shop-row button { background: #edaf11; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; }
