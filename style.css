@@ -1,60 +1,39 @@
 * { box-sizing: border-box; }
-body {
-    margin: 0; padding: 0;
-    background: #000; color: white;
-    font-family: sans-serif; overflow: hidden;
-    height: 100vh; display: flex; flex-direction: column;
-}
-
-#phaser-game { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; }
+body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+#phaser-game { flex-grow: 1; width: 100%; }
 canvas { max-width: 100% !important; max-height: 100% !important; object-fit: contain; }
 
-.ui-container {
-    width: 100%; max-width: 480px; margin: 0 auto;
-    padding: 10px 15px calc(15px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 15px;
-}
+.ui-container { width: 100%; max-width: 480px; margin: 0 auto; padding: 10px 15px 20px; display: flex; flex-direction: column; gap: 15px; }
 
-.hp-container {
-    position: relative; width: 100%; height: 26px;
-    background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden;
-}
-#hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4444, #880000); transition: width 0.3s ease; }
+.hp-container { position: relative; width: 100%; height: 26px; background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; }
+#hp-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4444, #880000); transition: width 0.3s; }
 #hp-text { position: absolute; width: 100%; text-align: center; top: 4px; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
 
-/* Общий стиль для кнопок-действий (атака, рюкзак, магазин) */
-.action-row { display: flex; justify-content: center; gap: 20px; align-items: center; }
+.action-row { display: flex; justify-content: center; gap: 15px; align-items: center; }
 
 .btn-action {
     width: 80px; height: 80px; 
-    background: rgba(255, 255, 255, 0.15);
-    border: 3px solid #edaf11; /* Та самая рамка */
+    background: rgba(255, 255, 255, 0.15); 
+    border: 3px solid #edaf11; 
     border-radius: 18px; 
-    cursor: pointer;
     display: flex; justify-content: center; align-items: center;
-    transition: transform 0.1s, background 0.2s;
-    padding: 0;
+    padding: 0; cursor: pointer; transition: 0.1s;
 }
-.btn-action:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.3); }
-.btn-action img { width: 75%; height: 75%; object-fit: contain; }
+.main-atk { width: 95px; height: 95px; border-width: 4px; }
+.btn-action:active { transform: scale(0.9); }
+.btn-action img { width: 70%; height: 70%; object-fit: contain; }
 
-/* Кнопка сброса (нижняя) */
-.menu-row { display: flex; justify-content: center; }
-.btn-menu {
-    padding: 10px 20px; background: #1c1c21; border: 1px solid #333;
-    color: #666; border-radius: 10px; font-size: 12px;
-}
+.btn-reset { background: none; border: none; color: #444; font-size: 11px; margin-top: 5px; cursor: pointer; }
 
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
 .modal-show { display: flex; }
-.modal-content { background: #111; border: 2px solid #edaf11; padding: 25px; width: 85%; max-width: 350px; border-radius: 24px; text-align: center; }
+.modal-content { background: #111; border: 2px solid #edaf11; padding: 20px; width: 85%; border-radius: 20px; text-align: center; }
 
-.btn-close { margin-top: 15px; width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 10px; font-weight: bold; }
+#inv-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+.slot { background: #000; border: 1px solid #222; aspect-ratio: 1/1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+.slot img { width: 75%; }
+.qty { position: absolute; bottom: 3px; right: 5px; font-size: 10px; color: #edaf11; }
 
-#inv-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
-.slot { background: #0a0a0a; border: 1px solid #222; aspect-ratio: 1/1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
-.slot img { width: 70%; }
-.qty { position: absolute; bottom: 5px; right: 8px; font-size: 11px; color: #edaf11; }
-
-.shop-row { background: #1a1a1a; padding: 12px; margin-bottom: 10px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+.shop-row { background: #1a1a1a; padding: 10px; margin-bottom: 8px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
 .shop-row button { background: #edaf11; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; }
+.btn-close { margin-top: 10px; width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 10px; }

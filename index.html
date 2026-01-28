@@ -9,7 +9,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-
     <div id="phaser-game"></div>
 
     <div class="ui-container">
@@ -20,26 +19,21 @@
 
         <div class="action-row">
             <button id="btn-inv-toggle" class="btn-action">
-                <img src="img/backpack.png" alt="inventory">
+                <img src="img/backpack.png" alt="backpack">
             </button>
-
-            <button id="btn-attack" class="btn-action">
+            <button id="btn-attack" class="btn-action main-atk">
                 <img id="weapon-icon" src="img/items/hand.png" alt="attack">
             </button>
-
             <button id="btn-shop-toggle" class="btn-action">
                 <span style="font-size: 30px;">🛒</span>
             </button>
         </div>
-
-        <div class="menu-row">
-            <button id="btn-reset" class="btn-menu">🔄 Сбросить прогресс</button>
-        </div>
+        <button id="btn-reset" class="btn-reset">🔄 Сброс прогресса</button>
     </div>
 
     <div id="inv-modal" class="modal">
         <div class="modal-content">
-            <h3>Ваши вещи</h3>
+            <h3>Инвентарь</h3>
             <div id="inv-container"></div>
             <button class="btn-close" onclick="closeModals()">Закрыть</button>
         </div>
@@ -49,15 +43,10 @@
         <div class="modal-content">
             <h3>Лавка торговца</h3>
             <div id="shop-items"></div>
-            <button class="btn-close" onclick="closeModals()">Уйти</button>
+            <button class="btn-close" onclick="exitShop()">Выйти</button>
         </div>
     </div>
 
     <script src="script.js"></script>
-    <script>
-        function closeModals() { 
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('modal-show')); 
-        }
-    </script>
 </body>
 </html>
